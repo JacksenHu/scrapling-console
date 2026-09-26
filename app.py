@@ -944,6 +944,292 @@ def pull_paid_source(src):
     except Exception as e:
         return {"ok": False, "msg": str(e)[:200]}
 
+
+
+# ---------------- 定时调度 / Webhook / 变更监控 ----------------
+
+SCHEDULES_FILE = "/opt/scrapling/schedules.json"
+WEBHOOKS_FILE = "/opt/scrapling/webhooks.json"
+
+def load_schedules():
+    try:
+        with open(SCHEDULES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("schedules") or []
+    except Exception:
+        return []
+
+def save_schedules(items):
+    try:
+        with open(SCHEDULES_FILE, "w", encoding="utf-8") as f:
+            json.dump({"schedules": items}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def load_webhooks():
+    try:
+        with open(WEBHOOKS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("webhooks") or []
+    except Exception:
+        return []
+
+def save_webhooks(items):
+    try:
+        with open(WEBHOOKS_FILE, "w", encoding="utf-8") as f:
+            json.dump({"webhooks": items}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def cron_field_match(expr, val):
+    """单字段 cron 匹配：* / */n 数字 逗号 区间"""
+    expr = (expr or "").strip()
+    if expr in ("", "*"):
+        return True
+    if expr.startswith("*/"):
+        try:
+            return val % int(expr[2:]) == 0
+        except Exception:
+            return False
+    if "," in expr:
+        try:
+            return val in [int(x) for x in expr.split(",")]
+        except Exception:
+            return False
+    if "-" in expr:
+        try:
+            a, b = [int(x) for x in expr.split("-")]
+            return a <= val <= b
+        except Exception:
+            return False
+    try:
+        return int(expr) == val
+    except Exception:
+        return False
+
+def cron_match(expr, ts=None):
+    """5 字段 cron：分 时 日 月 周（周：0=周日至6=周六）；ts 为 epoch 秒，默认当前时间"""
+    if ts is None:
+        ts = time.time()
+    lt = time.localtime(ts)
+    wday = (lt.tm_wday + 1) % 7  # 周1=1 ... 周日=0
+    parts = (expr or "").split()
+    if len(parts) != 5:
+        return False
+    return (cron_field_match(parts[0], lt.tm_min) and cron_field_match(parts[1], lt.tm_hour)
+            and cron_field_match(parts[2], lt.tm_mday) and cron_field_match(parts[3], lt.tm_mon)
+            and cron_field_match(parts[4], wday))
+
+def fire_webhooks(event, payload):
+    for w in load_webhooks():
+        if not w.get("enabled"):
+            continue
+        evs = w.get("events") or ["task.finish"]
+        if event not in evs:
+            continue
+        try:
+            requests.post(w["url"], json={"event": event, **payload},
+                          headers={"X-Webhook-Secret": w.get("secret", ""),
+                                   "User-Agent": "scrapling-webhook/1.0"},
+                          timeout=10)
+        except Exception:
+            pass
+
+def _task_items(tid):
+    fp = os.path.join(task_dir(tid), "items.jsonl")
+    if not os.path.exists(fp):
+        return [], ""
+    try:
+        lines = open(fp, "r", encoding="utf-8", errors="replace").readlines()
+        return lines, "".join(lines)
+    except Exception:
+        return [], ""
+
+def _schedule_loop():
+    """每 30 秒扫一次定时计划：命中 cron 即启动任务；任务完成后对比结果做变更监控 + 触发 Webhook"""
+    while True:
+        try:
+            _ts = time.time()
+            key = time.strftime("%Y%m%d%H%M", time.localtime(_ts))
+            for s in load_schedules():
+                if not s.get("enabled"):
+                    continue
+                if s.get("last_run") == key:
+                    continue
+                if not cron_match(s.get("cron", ""), _ts):
+                    continue
+                task = load_task(s.get("task_id") or "")
+                if task is None:
+                    continue
+                try:
+                    start_container(task)
+                    s["last_run"] = key
+                    s["last_run_at"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(_ts))
+                    s["runs"] = int(s.get("runs", 0)) + 1
+                    save_schedules(load_schedules())
+                    fire_webhooks("task.scheduled", {"schedule_id": s.get("id"),
+                                                     "task_id": s.get("task_id"),
+                                                     "cron": s.get("cron")})
+                except Exception:
+                    pass
+            # 变更监控：已完成的计划任务，对比本次/上次结果
+            for s in load_schedules():
+                if not s.get("monitor"):
+                    continue
+                tid = s.get("task_id") or ""
+                task = load_task(tid)
+                if task is None:
+                    continue
+                if docker_status(tid) != "exited":
+                    continue
+                lines, content = _task_items(tid)
+                digest = str(hash(content))
+                if s.get("_last_digest") is not None and s.get("_last_digest") != digest:
+                    fire_webhooks("task.changed", {"schedule_id": s.get("id"),
+                                                   "task_id": tid,
+                                                   "items": len(lines),
+                                                   "changed": True})
+                s["_last_digest"] = digest
+                s["last_items"] = len(lines)
+                save_schedules(load_schedules())
+            # 任务完成检测（任意任务 running→exited）：触发 task.finish Webhook
+            for t in load_all_tasks_meta():
+                st = docker_status(t.get("id"))
+                prev = t.get("_last_status")
+                if prev == "running" and st == "exited":
+                    fire_webhooks("task.finish", {"task_id": t.get("id"),
+                                                  "name": t.get("name"),
+                                                  "type": t.get("type"),
+                                                  "items": task_item_count(t.get("id"))})
+            _mark_task_statuses()
+        except Exception:
+            pass
+        time.sleep(30)
+
+def _mark_task_statuses():
+    try:
+        tasks = load_all_tasks_meta()
+        for t in tasks:
+            t["_last_status"] = docker_status(t.get("id"))
+    except Exception:
+        pass
+
+def load_all_tasks_meta():
+    items = []
+    if not os.path.isdir(TASKS_DIR):
+        return items
+    for d in os.listdir(TASKS_DIR):
+        t = load_task(d)
+        if t:
+            items.append(t)
+    return items
+
+# 启动计划调度线程（幂等）
+_schedule_thread_started = False
+
+def _ensure_schedule_thread():
+    global _schedule_thread_started
+    if _schedule_thread_started:
+        return
+    threading.Thread(target=_schedule_loop, daemon=True).start()
+    _schedule_thread_started = True
+
+# ---- 定时计划 API ----
+
+@app.post("/api/schedules")
+async def api_schedule_create(request: Request):
+    require_quota(request, cost=0)
+    body = await request.json()
+    task_id = (body.get("task_id") or "").strip()
+    cron = (body.get("cron") or "").strip()
+    name = (body.get("name") or "").strip() or "定时任务"
+    monitor = bool(body.get("monitor", False))
+    if not task_id or not cron:
+        raise HTTPException(status_code=400, detail="请填写任务ID与cron表达式")
+    if load_task(task_id) is None:
+        raise HTTPException(status_code=400, detail="任务不存在")
+    if len(cron.split()) != 5:
+        raise HTTPException(status_code=400, detail="cron 需 5 段：分 时 日 月 周，如 */30 * * * * 或 0 9 * * *")
+    sch = {"id": "s" + uuid.uuid4().hex[:8], "name": name, "task_id": task_id, "cron": cron,
+           "monitor": monitor, "enabled": True, "runs": 0,
+           "created_at": time.strftime("%Y-%m-%d %H:%M:%S"), "last_run": "", "last_run_at": ""}
+    items = load_schedules()
+    items.append(sch)
+    save_schedules(items)
+    _ensure_schedule_thread()
+    return {"ok": True, "schedule": sch, "msg": "已创建。示例 cron：*/30 * * * *（每30分钟）、0 9 * * *（每天9点）"}
+
+@app.get("/api/schedules")
+def api_schedules():
+    return {"schedules": load_schedules()}
+
+@app.delete("/api/schedules/{sid}")
+def api_schedule_del(sid: str):
+    items = [s for s in load_schedules() if s.get("id") != sid]
+    save_schedules(items)
+    return {"ok": True}
+
+@app.post("/api/schedules/{sid}/toggle")
+def api_schedule_toggle(sid: str):
+    items = load_schedules()
+    for s in items:
+        if s.get("id") == sid:
+            s["enabled"] = not s.get("enabled", True)
+            break
+    save_schedules(items)
+    return {"ok": True}
+
+# ---- Webhook API ----
+
+@app.post("/api/webhooks")
+async def api_webhook_create(request: Request):
+    require_quota(request, cost=0)
+    body = await request.json()
+    url = (body.get("url") or "").strip()
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="请填写 http(s) 回调地址")
+    wh = {"id": "w" + uuid.uuid4().hex[:8], "url": url,
+          "secret": (body.get("secret") or "").strip(),
+          "events": body.get("events") or ["task.finish"],
+          "enabled": True, "created_at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    items = load_webhooks()
+    items.append(wh)
+    save_webhooks(items)
+    return {"ok": True, "webhook": wh}
+
+@app.get("/api/webhooks")
+def api_webhooks():
+    return {"webhooks": load_webhooks()}
+
+@app.delete("/api/webhooks/{wid}")
+def api_webhook_del(wid: str):
+    items = [w for w in load_webhooks() if w.get("id") != wid]
+    save_webhooks(items)
+    return {"ok": True}
+
+@app.post("/api/webhooks/{wid}/toggle")
+def api_webhook_toggle(wid: str):
+    items = load_webhooks()
+    for w in items:
+        if w.get("id") == wid:
+            w["enabled"] = not w.get("enabled", True)
+            break
+    save_webhooks(items)
+    return {"ok": True}
+
+@app.post("/api/webhooks/test")
+async def api_webhook_test(request: Request):
+    body = await request.json()
+    url = (body.get("url") or "").strip()
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="请填写 http(s) 回调地址")
+    try:
+        r = requests.post(url, json={"event": "test", "msg": "Scrapling Webhook 测试"},
+                          headers={"User-Agent": "scrapling-webhook/1.0"}, timeout=10)
+        return {"ok": True, "status": r.status_code}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"回调失败: {e}")
+
+_ensure_schedule_thread()
+
 def _paid_source_loop():
     """后台守护线程：按间隔拉取已启用且已填提取地址的付费源（未配置密钥时仅提示，不影响运行）"""
     while True:
