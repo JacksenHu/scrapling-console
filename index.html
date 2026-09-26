@@ -630,6 +630,18 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
     <symbol id="i-check" viewBox="0 0 24 24">
       <path d="M4.5 12.5l5 5L19.5 6.5"/>
     </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>
+    </symbol>
+    <symbol id="i-link" viewBox="0 0 24 24">
+      <path d="M9.5 14.5l5-5M10 8l-2.2 2.2a3.2 3.2 0 0 0 0 4.5l.5.5a3.2 3.2 0 0 0 4.5 0L15 13"/><path d="M14 16l2.2-2.2a3.2 3.2 0 0 0 0-4.5l-.5-.5a3.2 3.2 0 0 0-4.5 0L9 11"/>
+    </symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24">
+      <path d="M4 5h16l-6.5 7.5V19l-3-1.5v-5L4 5z"/>
+    </symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24">
+      <path d="M4 3.5h16M4 8.5h11M4 13.5h7"/><circle cx="12" cy="8.5" r="1.6"/><circle cx="18" cy="8.5" r="1.6"/><circle cx="8" cy="13.5" r="1.6"/><circle cx="4" cy="18.5" r="1.6"/><path d="M12 10v3.5M18 10v2M8 15v2"/>
+    </symbol>
     <symbol id="i-x" viewBox="0 0 24 24">
       <path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/>
     </symbol>
@@ -920,8 +932,20 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
   <!-- 代理池 -->
   <section id="sec-proxy" class="hidden">
 
-    <!-- 用代理打开网址 -->
-    <div class="card">
+      <div class="card">
+        <h2><svg class="ic"><use href="#i-globe"/></svg> 出口 IP 地区<small>后台自动给代理打国家/地区标签（ip-api 免费库，存活池优先）；按地区选用出口 IP</small></h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+          <div class="arg-row"><label>选择地区</label><select id="regionSel"><option value="">全部地区</option></select></div>
+          <div class="arg-row" style="display:flex;align-items:flex-end;padding-bottom:6px"><button class="btn green" onclick="loadRegions()">刷新地区</button></div>
+        </div>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table>
+            <thead><tr><th>IP</th><th>国家</th><th>地区</th><th>城市</th><th>延迟</th></tr></thead>
+            <tbody id="regionBody"></tbody>
+          </table>
+        </div>
+      </div>
+<div class="card">
       <h2><svg class="ic"><use href="#i-globe"/></svg> 用代理打开网址<small>用代理池的 IP 访问目标网站（如注册页），换出口 IP 不怕风控；不填指定代理时自动优先用「该站可用池」</small></h2>
       <div class="toolbar" style="flex-wrap:wrap">
         <input type="text" id="pvUrl" placeholder="输入目标网址，如 https://example.com/register" style="min-width:320px" onkeydown="if(event.key==='Enter')proxyVisit()">
@@ -1096,6 +1120,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
         <label style="color:var(--muted);font-size:12px">导出格式
           <select id="taskExport" style="padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
             <option value="jsonl">JSONL（每行一条）</option>
+            <option value="xlsx">Excel（.xlsx 表格）</option>
             <option value="csv">CSV</option>
             <option value="json">JSON</option>
             <option value="xml">XML</option>
@@ -1131,7 +1156,19 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
         </div>
       </div>
 
+      
       <div class="card">
+        <h2><svg class="ic"><use href="#i-filter"/></svg> 数据清洗与去重<small>对任务结果去重、修剪空值、正则提取字段；生成 cleaned 结果可导出</small></h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+          <div class="arg-row"><label>任务ID <em>*</em></label><input id="clTask" placeholder="如 t260926..."></div>
+          <div class="arg-row"><label>去重字段（逗号分隔，可空）</label><input id="clDedup" placeholder="title,url"></div>
+          <div class="arg-row"><label>字段清洗规则 JSON（可空）</label><input id="clRules" placeholder='[{"field":"title","trim":true}]'></div>
+        </div>
+        <button class="btn green" onclick="cleanTask()">执行清洗</button>
+        <div class="msg" id="clMsg"></div>
+      </div>
+
+<div class="card">
         <h2><svg class="ic"><use href="#i-link"/></svg> Webhook 回调<small>任务完成 / 计划触发 / 内容变更时，POST 推送到你的接口</small></h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px">
           <div class="arg-row"><label>回调 URL <em>*</em></label><input id="whUrl" placeholder="https://your-app.com/hook"></div>
@@ -1695,7 +1732,21 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
           <div class="result hidden" id="advCliRes"></div>
         </div>
         <div class="adv-card">
-          <h3><svg class="ic"><use href="#i-robot"/></svg> 接入 AI（MCP） <span class="adv-tag">全部工具</span></h3>
+                <div class="card">
+        <h3><svg class="ic"><use href="#i-tree"/></svg> DOM 导航 <span class="adv-tag">点选器后端</span></h3>
+        <p style="color:var(--muted);font-size:12.5px;margin:6px 0 0">给定选择器读取元素：父 / 子 / 兄弟 / 属性 / 文本 / 结构树，自动生成 CSS 建议，抓取前先摸清页面结构。</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px">
+          <div class="arg-row"><label>网址 <em>*</em></label><input id="domUrl" placeholder="https://example.com"></div>
+          <div class="arg-row"><label>选择器 <em>*</em></label><input id="domSel" placeholder=".product h2"></div>
+          <div class="arg-row"><label>操作</label><select id="domAct"><option value="info">元素信息</option><option value="text">文本</option><option value="attr">属性</option><option value="parent">父元素</option><option value="children">子元素</option><option value="siblings">兄弟元素</option><option value="tree">结构树</option></select></div>
+          <div class="arg-row"><label>属性名（操作=属性）</label><input id="domAttr" placeholder="href"></div>
+        </div>
+        <button class="btn green" style="margin-top:10px" onclick="domNav()">导航</button>
+        <div class="msg" id="domMsg"></div>
+        <pre id="domOut" class="mono" style="max-height:240px;overflow:auto;background:var(--panel);border-radius:10px;padding:10px;font-size:12px;display:none"></pre>
+      </div>
+
+<h3><svg class="ic"><use href="#i-robot"/></svg> 接入 AI（MCP） <span class="adv-tag">全部工具</span></h3>
           <p>以上高级工具 + 全部控制台能力都已封装成 MCP 工具，AI agent 连上即可调用。</p>
           <div class="arg-row"><label>工具名</label><input value="page_markdown / site_markdown / capture_xhr / selector_gen / extract_cli" disabled></div>
           <div class="arg-row"><label>配置</label><span class="hint">去「API 接入」页复制 MCP 连接地址与 Bearer Key，填入 Cline / Claude Desktop。</span></div>
@@ -1910,6 +1961,14 @@ curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的
 {"event": "task.finish", "task_id": "t2609...", "name": "...", "type": "single", "items": 12}</div></div>
 <div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/webhooks</span><span class="ep-desc">Webhook 列表</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/webhooks</div></div>
 <div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/webhooks/test</span><span class="ep-desc">发送测试回调</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/webhooks/test -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" -d '{"url":"https://your-app.com/hook"}'</div></div>
+
+
+<div class="guide-sec-title" id="api-batchc">⑩ 批次C：DOM导航 / 数据清洗 / Excel导出 / IP地区</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/dom/navigate</span><span class="ep-desc">DOM 导航：给定选择器读取元素信息/父/子/兄弟/属性/文本/结构树，自动建议 CSS 选择器（可视化点选器后端）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网页</td></tr><tr><td><code>selector</code></td><td>string</td><td>CSS 选择器（也支持 XPath）</td></tr><tr><td><code>action</code></td><td>string</td><td>info / text / attr / parent / children / siblings / tree</td></tr><tr><td><code>attr</code></td><td>string</td><td>action=attr 时要读取的属性名，如 href</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/dom/navigate -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" -d '{"url":"https://example.com","selector":"h1","action":"info"}'</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/clean</span><span class="ep-desc">数据清洗与去重：修剪/去空/正则提取/替换，按字段去重，结果写 cleaned.jsonl</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>dedup_keys</code></td><td>list</td><td>按这些字段去重，如 ["url"]</td></tr><tr><td><code>rules</code></td><td>list</td><td>规则数组：[{"field":"title","trim":true,"drop_empty":true,"regex":"(\d+)","replace":["旧","新"]}]</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/tasks/t2609.../clean -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" -d '{"dedup_keys":["url"],"rules":[{"field":"title","trim":true}]}'</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}/export?fmt=xlsx</span><span class="ep-desc">结果导出新增 Excel：创建任务时 export_format 选 xlsx，或导出端点 fmt=xlsx（openpyxl 生成 .xlsx）</span></div><div class="codeblock">curl -X GET https://YOUR-SERVER:8080/api/tasks/t2609.../export?fmt=xlsx -H "X-Api-Key: sk-你的APIKey" -o 结果.xlsx</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/regions</span><span class="ep-desc">代理地区统计：后台线程自动给存活池/全池打国家地区标签（ip-api 免费库），返回各地区数量</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxies/regions</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/by-region?country=US</span><span class="ep-desc">按地区取存活代理（country 传国家名或 ISO 代码，空=全部）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies/by-region?country=US"</div></div>
 
 
 <div class="guide-sec-title" id="api-tasks">⑦ 爬虫任务（整站/定时/批量）</div>
@@ -2884,6 +2943,68 @@ async function testWebhook() {
     msg.innerHTML = IC('check') + " 测试回调已送达（HTTP " + d.status + "）";
   } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
 }
+
+
+/* ---------- 批次C：清洗 / DOM导航 / 地区 ---------- */
+async function cleanTask() {
+  const msg = document.getElementById("clMsg");
+  const tid = document.getElementById("clTask").value.trim();
+  if (!tid) { msg.textContent = "请填写任务ID"; return; }
+  let rules = [];
+  try { rules = JSON.parse(document.getElementById("clRules").value || "[]"); }
+  catch (e) { msg.innerHTML = IC('x') + " 清洗规则 JSON 格式错误"; return; }
+  const body = {
+    dedup_keys: document.getElementById("clDedup").value.split(",").map(s => s.trim()).filter(Boolean),
+    rules,
+  };
+  try {
+    const d = await req("/tasks/" + tid + "/clean", { method: "POST", body: JSON.stringify(body) });
+    msg.innerHTML = IC('check') + " 输入 " + d.input + " 条 → 输出 " + d.output + " 条（去重/清洗 " + d.dropped + " 条）";
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function domNav() {
+  const msg = document.getElementById("domMsg");
+  const body = {
+    url: document.getElementById("domUrl").value.trim(),
+    selector: document.getElementById("domSel").value.trim(),
+    action: document.getElementById("domAct").value,
+    attr: document.getElementById("domAttr").value.trim(),
+  };
+  if (!body.url || !body.selector) { msg.textContent = "请填写网址与选择器"; return; }
+  try {
+    const d = await req("/dom/navigate", { method: "POST", body: JSON.stringify(body) });
+    msg.innerHTML = IC('check') + " 匹配 " + d.count + " 个元素" + (d.suggest_css ? " · 建议选择器: " + escapeHtml(d.suggest_css) : "");
+    const out = document.getElementById("domOut");
+    out.style.display = "block";
+    out.textContent = JSON.stringify(d.samples, null, 2).slice(0, 3000);
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function loadRegions() {
+  try {
+    const d = await req("/proxies/regions");
+    const sel = document.getElementById("regionSel");
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部地区（' + d.total + '）</option>' + Object.keys(d.regions).map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}（${d.regions[c]}）</option>`).join("");
+    sel.value = cur;
+    await regionList(sel.value);
+  } catch (e) { document.getElementById("regionBody").innerHTML = '<tr><td colspan="5" style="color:var(--muted)">地区加载失败</td></tr>'; }
+}
+async function regionList(country) {
+  const el = document.getElementById("regionBody");
+  try {
+    const d = await req("/proxies/by-region?country=" + encodeURIComponent(country || ""));
+    if (!d.count) { el.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">该地区暂无存活代理（后台打标中，稍后刷新）</td></tr>'; return; }
+    el.innerHTML = d.proxies.slice(0, 100).map(p => `<tr>
+      <td class="mono">${escapeHtml(p.ip)}</td>
+      <td>${escapeHtml(p.country || "-")}</td>
+      <td>${escapeHtml(p.region || "-")}</td>
+      <td>${escapeHtml(p.city || "-")}</td>
+      <td>${p.latency ? p.latency + "ms" : "-"}</td>
+    </tr>`).join("");
+  } catch (e) { el.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">加载失败</td></tr>'; }
+}
+
+document.addEventListener("change", function(e){ if(e.target && e.target.id === "regionSel") regionList(e.target.value); });
 
 async function loadTasks() {
   const body = document.getElementById("taskBody");

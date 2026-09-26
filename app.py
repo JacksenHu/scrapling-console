@@ -1230,6 +1230,305 @@ async def api_webhook_test(request: Request):
 
 _ensure_schedule_thread()
 
+
+
+# ---------------- 批次C：Excel导出 / DOM导航 / 数据清洗 / IP地区打标 ----------------
+
+GEOIP_CACHE_FILE = "/opt/scrapling/geoip_cache.json"
+REGION_LOCK = threading.Lock()
+
+def load_geo_cache():
+    try:
+        with open(GEOIP_CACHE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_geo_cache(c):
+    try:
+        with open(GEOIP_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(c, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+def _public_ip_host(ip):
+    """去掉端口取纯 IP"""
+    ip = (ip or "").strip()
+    if ":" in ip and ip.count(":") == 1:
+        ip = ip.split(":")[0]
+    return ip
+
+def lookup_ip_region(ip, cache):
+    host = _public_ip_host(ip)
+    if not host or host in cache:
+        return cache.get(host, {})
+    try:
+        r = requests.get("http://ip-api.com/json/" + host + "?fields=status,country,countryCode,regionName,city,query", timeout=8)
+        d = r.json()
+        if d.get("status") == "success":
+            info = {"country": d.get("country"), "code": d.get("countryCode"),
+                    "region": d.get("regionName"), "city": d.get("city")}
+            cache[host] = info
+            return info
+    except Exception:
+        pass
+    return {}
+
+def _region_loop():
+    """后台增量给代理打地区标签：优先存活池，再全池（ip-api 免费 45次/分钟，限速）"""
+    while True:
+        try:
+            alive, _ = load_alive()
+            allp = load_json_quiet(PROXY_JSON) or []
+            if isinstance(allp, dict):
+                allp = allp.get("proxies") or allp.get("items") or []
+            cache = load_geo_cache()
+            changed = False
+            targets = [p for p in alive if p and not _has_region(p, cache)] + [p for p in allp if p and not _has_region(p, cache)]
+            targets = targets[:120]  # 每轮最多打 120 条（约2-3分钟）
+            for p in targets:
+                ip = p.get("ip") or (p.get("server") or "").split(":")[0]
+                if not ip:
+                    continue
+                info = lookup_ip_region(ip, cache)
+                if info:
+                    p["country"] = info.get("country")
+                    p["country_code"] = info.get("code")
+                    p["region"] = info.get("region")
+                    p["city"] = info.get("city")
+                    changed = True
+                time.sleep(1.4)  # 限速 ~40/min
+            if changed:
+                save_alive(alive)
+                save_json_quiet(PROXY_JSON, allp)
+                save_geo_cache(cache)
+        except Exception:
+            pass
+        time.sleep(240)
+
+def _has_region(p, cache):
+    if p.get("country"):
+        return True
+    ip = p.get("ip") or (p.get("server") or "").split(":")[0]
+    return _public_ip_host(ip) in cache
+
+_region_thread_started = False
+
+def _ensure_region_thread():
+    global _region_thread_started
+    if _region_thread_started:
+        return
+    threading.Thread(target=_region_loop, daemon=True).start()
+    _region_thread_started = True
+
+def load_json_quiet(fp):
+    try:
+        with open(fp, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+def save_json_quiet(fp, data):
+    try:
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+# ---- Excel 导出 ----
+
+def items_to_xlsx_bytes(items, filename="scrapling_export"):
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "抓取结果"
+    keys = []
+    for it in items:
+        if isinstance(it, dict):
+            for k in it.keys():
+                if k not in keys:
+                    keys.append(k)
+    if not keys:
+        keys = ["url", "title", "content"]
+    ws.append(keys)
+    for it in items:
+        row = []
+        for k in keys:
+            v = it.get(k) if isinstance(it, dict) else it
+            row.append(v if v is not None else "")
+        ws.append(row)
+    import io as _io
+    buf = _io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+# ---- DOM 导航 API ----
+
+@app.post("/api/dom/navigate")
+async def api_dom_navigate(request: Request):
+    require_quota(request, cost=1)
+    body = await request.json()
+    url = (body.get("url") or "").strip()
+    selector = (body.get("selector") or "").strip() or "html"
+    action = (body.get("action") or "").strip() or "info"   # info/parent/siblings/children/attr/text/tree
+    attr = (body.get("attr") or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="请填写网址")
+    try:
+        r = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"})
+        html = r.text
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"获取页面失败: {e}")
+    from lxml import html as lhtml
+    from lxml import etree
+    try:
+        doc = lhtml.fromstring(html.encode("utf-8", errors="ignore"))
+        nodes = doc.cssselect(selector) if selector else []
+        if not nodes:
+            # 尝试 XPath
+            try:
+                nodes = doc.xpath(selector)
+            except Exception:
+                nodes = []
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"选择器无效: {e}")
+    if not nodes:
+        return {"ok": True, "count": 0, "note": "未匹配到元素", "samples": []}
+    result = []
+    for n in nodes[:20]:
+        tag = getattr(n, "tag", "")
+        text = (n.text_content() or "").strip()[:200] if action in ("text", "info", "children", "siblings") else ""
+        if action == "info":
+            result.append({"tag": tag, "id": n.get("id"), "class": n.get("class"),
+                           "href": n.get("href"), "text": text})
+        elif action == "attr":
+            result.append({"attr": attr, "value": n.get(attr)})
+        elif action == "text":
+            result.append({"text": text})
+        elif action == "parent":
+            p = n.getparent()
+            result.append({"parent_tag": getattr(p, "tag", None) if p is not None else None,
+                           "parent_text": (p.text_content() or "").strip()[:200] if p is not None else ""})
+        elif action == "children":
+            kids = [{"tag": getattr(c, "tag", ""), "text": (c.text_content() or "").strip()[:80]} for c in n.getchildren()[:30]]
+            result.append({"children": kids, "count": len(list(n.iterchildren()))})
+        elif action == "siblings":
+            sibs = [{"tag": getattr(c, "tag", ""), "text": (c.text_content() or "").strip()[:80]}
+                    for c in (n.getparent().getchildren() if n.getparent() is not None else []) if c is not n][:30]
+            result.append({"siblings": sibs})
+        elif action == "tree":
+            def mini(el, depth=0):
+                return {"tag": getattr(el, "tag", ""), "depth": depth,
+                        "id": el.get("id"), "cls": el.get("class"),
+                        "text": (el.text_content() or "").strip()[:60]}
+            result.append({"tree": [mini(c, 1) for c in n.iterchildren()][:50]})
+    return {"ok": True, "count": len(nodes), "samples": result, "suggest_css": _suggest_css(nodes[0])}
+
+def _suggest_css(node):
+    parts = []
+    try:
+        n = node
+        for _ in range(4):
+            if n is None or getattr(n, "getparent", None) is None:
+                break
+            tag = getattr(n, "tag", "")
+            if not isinstance(tag, str):
+                break
+            sel = tag
+            if n.get("id"):
+                sel = "#" + n.get("id")
+                parts.insert(0, sel)
+                break
+            elif n.get("class"):
+                sel += "." + ".".join(n.get("class").split()[:2])
+            parts.insert(0, sel)
+            n = n.getparent()
+    except Exception:
+        pass
+    return " > ".join(parts) if parts else ""
+
+# ---- 数据清洗 / 去重管道 ----
+
+@app.post("/api/tasks/{tid}/clean")
+async def api_task_clean(tid: str, request: Request):
+    require_quota(request, cost=0)
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    dedup_keys = body.get("dedup_keys") or []
+    rules = body.get("rules") or []      # [{"field": "...", "trim": true, "drop_empty": true, "regex": "...", "replace": "..."}]
+    items, _ = _task_items(tid)
+    parsed = []
+    for line in items:
+        try:
+            parsed.append(json.loads(line))
+        except Exception:
+            pass
+    seen = {}
+    out = []
+    for it in parsed:
+        if not isinstance(it, dict):
+            out.append(it)
+            continue
+        keep = True
+        for r in rules:
+            f = r.get("field")
+            if f not in it:
+                continue
+            v = it.get(f)
+            if r.get("trim") and isinstance(v, str):
+                v = v.strip()
+            if r.get("drop_empty") and (v is None or (isinstance(v, str) and not v)):
+                keep = False
+                break
+            if r.get("regex"):
+                import re
+                m = re.search(r["regex"], str(v or ""))
+                v = m.group(0) if m else v
+            if r.get("replace"):
+                v = str(v or "").replace(r["replace"][0], r["replace"][1])
+            it[f] = v
+        if dedup_keys:
+            key = tuple(str(it.get(k, "")) for k in dedup_keys)
+            if key in seen:
+                continue
+            seen[key] = True
+        out.append(it)
+    fp = os.path.join(task_dir(tid), "cleaned.jsonl")
+    with open(fp, "w", encoding="utf-8") as f:
+        for it in out:
+            f.write(json.dumps(it, ensure_ascii=False) + chr(10))
+    return {"ok": True, "input": len(parsed), "output": len(out),
+            "dropped": len(parsed) - len(out), "file": fp}
+
+# ---- IP 地区选择（代理访问按地区） ----
+
+@app.get("/api/proxies/regions")
+def api_proxy_regions():
+    alive, _ = load_alive()
+    regions = {}
+    for p in alive:
+        c = p.get("country") or "未知"
+        regions.setdefault(c, []).append(p)
+    _ensure_region_thread()
+    return {"total": len(alive), "regions": {k: len(v) for k, v in regions.items()}}
+
+@app.get("/api/proxies/by-region")
+def api_proxy_by_region(country: str = ""):
+    alive, _ = load_alive()
+    if country:
+        alive = [p for p in alive if (p.get("country") or "") == country or (p.get("country_code") or "") == country]
+    # 只返回元信息，不泄露完整代理串给前端展示
+    out = []
+    for p in alive[:200]:
+        out.append({"ip": p.get("ip") or (p.get("server") or "").split(":")[0],
+                    "country": p.get("country"), "region": p.get("region"),
+                    "city": p.get("city"), "latency": p.get("latency"),
+                    "full": p.get("server") or p.get("ip")})
+    return {"count": len(alive), "proxies": out}
+
 def _paid_source_loop():
     """后台守护线程：按间隔拉取已启用且已填提取地址的付费源（未配置密钥时仅提示，不影响运行）"""
     while True:
@@ -2069,6 +2368,9 @@ def api_task_export(tid: str):
         xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<items>\n" + "\n".join(rows) + "\n</items>"
         return Response(content=xml, media_type="application/xml",
                         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(base + '.xml')}"})
+    if fmt == "xlsx":
+        return Response(content=items_to_xlsx_bytes(items, base), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(base + '.xlsx')}"})
     if fmt == "csv":
         cols = []
         for it in items:
