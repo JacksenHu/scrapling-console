@@ -72,6 +72,18 @@ async def auth_middleware(request: Request, call_next):
                     user = auth.get_session_user(st)
                     if not user:
                         return JSONResponse(status_code=401, content={"detail": "登录已失效，请重新登录"})
+                # 4) 应用令牌（第三方应用静默上报住宅节点通道，仅限住宅相关端点）
+                if not user:
+                    at = request.headers.get("X-App-Token", "")
+                    if at:
+                        app = next((a for a in load_residential_apps() if a.get("token") == at), None)
+                        if app:
+                            user = {"id": "app:" + str(app.get("id")),
+                                    "username": "app:" + str(app.get("name", "")),
+                                    "role": "user", "quota": 0, "total_quota": 0,
+                                    "status": "active", "_app": app}
+                        else:
+                            return JSONResponse(status_code=401, content={"detail": "App Token 无效"})
         if not user:
             return JSONResponse(status_code=401, content={"detail": "未授权"})
         if user.get("status") == "disabled":
@@ -640,6 +652,377 @@ def proxy_alive_export(request: Request, format: str = "csv"):
 
 
 
+# =============== 住宅节点（应用众包：第三方应用静默上报用户设备出口，汇聚为平台自己的住宅代理源） ===============
+
+RESIDENTIAL_FILE = "/opt/scrapling/residential_nodes.json"
+RESIDENTIAL_APPS_FILE = "/opt/scrapling/residential_apps.json"
+RESIDENTIAL_STALE_HOURS = 48   # 节点超过该时长无心跳视为离线，不再参与选用
+
+def load_residential_nodes():
+    try:
+        with open(RESIDENTIAL_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("nodes") or []
+    except Exception:
+        return []
+
+def save_residential_nodes(nodes):
+    try:
+        with open(RESIDENTIAL_FILE, "w", encoding="utf-8") as f:
+            json.dump({"nodes": nodes}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def load_residential_apps():
+    try:
+        with open(RESIDENTIAL_APPS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("apps") or []
+    except Exception:
+        return []
+
+def save_residential_apps(apps):
+    try:
+        with open(RESIDENTIAL_APPS_FILE, "w", encoding="utf-8") as f:
+            json.dump({"apps": apps}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def _node_fresh(n, now=None):
+    """节点是否新鲜：verified 且 48h 内有心跳（last_seen 由上报/心跳刷新）"""
+    if n.get("status") != "verified":
+        return False
+    try:
+        last = time.mktime(time.strptime(n.get("last_seen") or "", "%Y-%m-%d %H:%M:%S"))
+    except Exception:
+        return False
+    if now is None:
+        now = time.time()
+    return (now - last) < RESIDENTIAL_STALE_HOURS * 3600
+
+def residential_owner_of(request):
+    """上报者解析：优先 X-App-Token（第三方应用静默模式），其次登录用户/API Key（自用模式）"""
+    app_token = (request.headers.get("X-App-Token") or "").strip()
+    if app_token:
+        app = next((a for a in load_residential_apps() if a.get("token") == app_token), None)
+        if app:
+            return {"kind": "app", "id": app.get("id"), "name": app.get("name", "应用")}
+    user = current_user(request)
+    return {"kind": "user", "id": str(user.get("id")), "name": (user.get("username") or user.get("id") or "")[:40]}
+
+@app.post("/api/residential/report")
+async def residential_report(request: Request):
+    """上报一个住宅节点：第三方应用内置 X-App-Token 静默上报用户设备的 ip:port；
+    平台后台验证（能出网、出口不是服务器 IP）通过后入库「平台住宅池」，全局代理访问自动优先选用。
+    自用模式也可用登录态/API Key 上报（归属本人）。"""
+    own = residential_owner_of(request)
+    body = await request.json()
+    ip = (body.get("ip") or "").strip()
+    port = str(body.get("port") or "").strip()
+    protocol = (body.get("protocol") or "http").strip().lower() or "http"
+    name = (body.get("name") or own["name"]).strip()[:40]
+    if not ip or not port.isdigit():
+        raise HTTPException(status_code=400, detail="请填写有效的 ip 和 port")
+    node = {"node_id": uuid.uuid4().hex[:12], "owner": own["id"], "owner_kind": own["kind"],
+            "owner_name": own["name"], "name": name,
+            "ip": ip, "port": port, "protocol": protocol, "verified": False, "status": "pending",
+            "ms": None, "exit_ip": None, "added_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "last_seen": time.strftime("%Y-%m-%d %H:%M:%S")}
+    nodes = load_residential_nodes()
+    nodes.append(node)
+    save_residential_nodes(nodes)
+
+    def verify():
+        proxy = f"{protocol}://{ip}:{port}"
+        n = None
+        for it in load_residential_nodes():
+            if it.get("node_id") == node["node_id"]:
+                n = it
+                break
+        if n is None:
+            return
+        try:
+            r = requests.get("https://www.baidu.com", proxies={"http": proxy, "https": proxy},
+                             timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+            if r.status_code != 200:
+                n["status"] = "dead"
+                n["verified"] = False
+                save_residential_nodes(load_residential_nodes())
+                return
+            n["ms"] = int(r.elapsed.total_seconds() * 1000)
+            exit_ip = check_exit_ip(proxy, timeout=6)
+            if exit_ip == "LEAK":
+                n["status"] = "leak"
+                n["verified"] = False
+                save_residential_nodes(load_residential_nodes())
+                return
+            n["exit_ip"] = exit_ip or ""
+            n["status"] = "verified"
+            n["verified"] = True
+            n["last_seen"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            # 平台级：住宅 IP 高质量，同步进存活池，全局代理访问自动优先
+            touch_alive(ip, port, protocol, n["ms"], n["exit_ip"], source="residential")
+        except Exception:
+            n["status"] = "dead"
+            n["verified"] = False
+        save_residential_nodes(load_residential_nodes())
+    threading.Thread(target=verify, daemon=True).start()
+    return {"ok": True, "node": node, "msg": "已接收，正在后台验证（约几秒），通过后进入平台住宅池"}
+
+@app.get("/api/residential/list")
+async def residential_list(request: Request):
+    """我的节点：应用令牌 → 该应用全部节点；登录用户 → 本人节点"""
+    own = residential_owner_of(request)
+    mine = [n for n in load_residential_nodes() if n.get("owner") == own["id"]]
+    return {"total": len(mine), "items": mine}
+
+@app.post("/api/residential/remove")
+async def residential_remove(request: Request):
+    own = residential_owner_of(request)
+    body = await request.json()
+    nid = str(body.get("node_id") or "").strip()
+    nodes = [n for n in load_residential_nodes()
+             if not (n.get("owner") == own["id"] and n.get("node_id") == nid)]
+    save_residential_nodes(nodes)
+    return {"ok": True, "left": len(nodes)}
+
+@app.post("/api/residential/heartbeat")
+async def residential_heartbeat(request: Request):
+    """客户端保活：定期心跳刷新 last_seen，超时节点自动不参与选用"""
+    own = residential_owner_of(request)
+    body = await request.json()
+    nid = str(body.get("node_id") or "").strip()
+    nodes = load_residential_nodes()
+    hit = False
+    for n in nodes:
+        if n.get("owner") == own["id"] and n.get("node_id") == nid:
+            n["last_seen"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            hit = True
+            break
+    save_residential_nodes(nodes)
+    return {"ok": True, "hit": hit}
+
+@app.get("/api/residential/pool")
+async def residential_pool(request: Request):
+    """平台住宅池（已通过验证且新鲜的节点，全局代理访问自动优先选用）"""
+    now = time.time()
+    pool = [n for n in load_residential_nodes() if _node_fresh(n, now)]
+    return {"total": len(pool), "items": pool}
+
+# ---- 管理端：应用管理 + 平台节点池 ----
+
+@app.get("/api/admin/apps")
+def admin_residential_apps(request: Request):
+    require_admin(request)
+    apps = load_residential_apps()
+    nodes = load_residential_nodes()
+    for a in apps:
+        a["node_count"] = sum(1 for n in nodes if n.get("owner_kind") == "app" and n.get("owner") == a.get("id"))
+    return {"apps": apps}
+
+@app.post("/api/admin/apps")
+async def admin_residential_apps_add(request: Request):
+    require_admin(request)
+    body = await request.json()
+    name = (body.get("name") or "未命名应用").strip()[:40]
+    if not name:
+        raise HTTPException(status_code=400, detail="请填写应用名称")
+    app = {"id": "app-" + uuid.uuid4().hex[:10], "name": name,
+           "token": uuid.uuid4().hex + uuid.uuid4().hex,
+           "created_at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    apps = load_residential_apps()
+    apps.append(app)
+    save_residential_apps(apps)
+    return {"ok": True, "app": app, "msg": "已创建。把 App Token 内置进你的应用：应用启动后带 X-App-Token 头静默上报用户住宅 IP"}
+
+@app.delete("/api/admin/apps/{aid}")
+def admin_residential_apps_del(request: Request, aid: str):
+    require_admin(request)
+    apps = [a for a in load_residential_apps() if a.get("id") != aid]
+    save_residential_apps(apps)
+    # 同步下线该应用的节点（标记 dead）
+    nodes = load_residential_nodes()
+    for n in nodes:
+        if n.get("owner_kind") == "app" and n.get("owner") == aid:
+            n["status"] = "removed"
+            n["verified"] = False
+    save_residential_nodes(nodes)
+    return {"ok": True}
+
+@app.get("/api/admin/residential-nodes")
+def admin_residential_nodes(request: Request, app: str = "", status: str = "", limit: int = 200):
+    require_admin(request)
+    nodes = load_residential_nodes()
+    # 默认过滤已下线（removed）节点；显式传 status=removed 可查看全部
+    if not status:
+        nodes = [n for n in nodes if n.get("status") != "removed"]
+    if app:
+        nodes = [n for n in nodes if n.get("owner") == app]
+    if status:
+        nodes = [n for n in nodes if n.get("status") == status]
+    nodes.sort(key=lambda x: x.get("last_seen") or "", reverse=True)
+    return {"total": len(nodes), "items": nodes[:limit]}
+
+@app.post("/api/admin/residential-nodes/{nid}/remove")
+def admin_residential_nodes_remove(request: Request, nid: str):
+    require_admin(request)
+    nodes = [n for n in load_residential_nodes() if n.get("node_id") != nid]
+    save_residential_nodes(nodes)
+    return {"ok": True, "left": len(nodes)}
+
+
+# =============== 付费代理源（管理后台配置；API 密钥可暂不填写） ===============
+
+PAID_SOURCES_FILE = "/opt/scrapling/paid_sources.json"
+_paid_pull_lock = threading.Lock()
+
+def load_paid_sources():
+    try:
+        with open(PAID_SOURCES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("sources") or []
+    except Exception:
+        return []
+
+def save_paid_sources(sources):
+    try:
+        with open(PAID_SOURCES_FILE, "w", encoding="utf-8") as f:
+            json.dump({"sources": sources}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def pull_paid_source(src):
+    """从付费代理提取 API 拉一批代理入库主池。支持 JSON {data:[{ip,port}]} 或纯文本每行 ip:port"""
+    api_url = (src.get("api_url") or "").strip()
+    api_key = (src.get("api_key") or "").strip()
+    if not api_url:
+        return {"ok": False, "msg": "未配置提取接口地址"}
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        if api_key:
+            headers["Authorization"] = "Bearer " + api_key
+        r = requests.get(api_url, headers=headers, timeout=30)
+        if r.status_code != 200:
+            return {"ok": False, "msg": "HTTP " + str(r.status_code)}
+        text = r.text[:2000000]
+        parsed = []
+        try:
+            obj = json.loads(text)
+            data = obj.get("data") or obj.get("proxies") or obj.get("list") or (obj if isinstance(obj, list) else [])
+            for it in data:
+                if isinstance(it, dict):
+                    ip = str(it.get("ip") or it.get("host") or "").strip()
+                    port = str(it.get("port") or "").strip()
+                    if ip and port.isdigit():
+                        parsed.append((ip, port, (it.get("protocol") or "http").strip().lower() or "http"))
+                else:
+                    s = str(it).strip()
+                    if ":" in s and s.rsplit(":", 1)[1].isdigit():
+                        p1, p2 = s.rsplit(":", 1)
+                        parsed.append((p1.strip(), p2.strip(), "http"))
+        except Exception:
+            for line in text.splitlines():
+                line = line.strip()
+                if ":" in line and line.rsplit(":", 1)[1].isdigit():
+                    p1, p2 = line.rsplit(":", 1)
+                    parsed.append((p1.strip(), p2.strip(), "http"))
+        if not parsed:
+            return {"ok": False, "msg": "响应中未解析到代理"}
+        pool = load_proxies()
+        keys = {f"{p.get('ip')}:{p.get('port')}" for p in pool}
+        added = 0
+        for ip, port, proto in parsed:
+            if f"{ip}:{port}" not in keys:
+                pool.append({"ip": ip, "port": port, "protocol": proto,
+                             "source": (src.get("name") or "paid")[:30],
+                             "added_at": time.strftime("%Y-%m-%d %H:%M:%S")})
+                added += 1
+        if added:
+            try:
+                with open(PROXY_JSON, "w", encoding="utf-8") as f:
+                    json.dump(pool, f, ensure_ascii=False)
+            except Exception as e:
+                return {"ok": False, "msg": "入库失败: " + str(e)[:100]}
+        return {"ok": True, "total": len(parsed), "added": added}
+    except Exception as e:
+        return {"ok": False, "msg": str(e)[:200]}
+
+def _paid_source_loop():
+    """后台守护线程：按间隔拉取已启用且已填提取地址的付费源（未配置密钥时仅提示，不影响运行）"""
+    while True:
+        try:
+            for src in load_paid_sources():
+                if not src.get("enabled", True):
+                    continue
+                if not (src.get("api_url") or "").strip():
+                    continue
+                interval = max(1, int(src.get("interval_hours", 6) or 6)) * 3600
+                last = src.get("last_pull")
+                now = time.time()
+                if last and (now - float(last)) < interval:
+                    continue
+                with _paid_pull_lock:
+                    res = pull_paid_source(src)
+                    for s in load_paid_sources():
+                        if s.get("id") == src.get("id"):
+                            s["last_pull"] = time.time()
+                            s["last_result"] = res.get("msg") or ("OK" if res.get("ok") else "失败")
+                            break
+                    save_paid_sources(load_paid_sources())
+        except Exception as e:
+            print("paid source loop:", e)
+        time.sleep(3600)
+
+@app.get("/api/admin/proxy-sources")
+def admin_proxy_sources(request: Request):
+    require_admin(request)
+    srcs = []
+    for s in load_paid_sources():
+        s2 = dict(s)
+        if s2.get("api_key"):
+            s2["api_key"] = "****"
+        srcs.append(s2)
+    return {"sources": srcs}
+
+@app.post("/api/admin/proxy-sources")
+async def admin_proxy_sources_add(request: Request):
+    require_admin(request)
+    body = await request.json()
+    name = (body.get("name") or "付费源").strip()[:40]
+    api_url = (body.get("api_url") or "").strip()
+    if not api_url:
+        raise HTTPException(status_code=400, detail="请填写提取接口地址")
+    src = {"id": uuid.uuid4().hex[:10], "name": name, "api_url": api_url,
+           "api_key": (body.get("api_key") or "").strip(),
+           "interval_hours": max(1, min(int(body.get("interval_hours", 6) or 6), 72)),
+           "enabled": body.get("enabled", True),
+           "added_at": time.strftime("%Y-%m-%d %H:%M:%S"), "last_pull": None, "last_result": ""}
+    srcs = load_paid_sources()
+    srcs.append(src)
+    save_paid_sources(srcs)
+    return {"ok": True, "source": src, "msg": "已保存。密钥可暂不填写；填写并启用后系统按间隔自动拉取入库"}
+
+@app.delete("/api/admin/proxy-sources/{sid}")
+def admin_proxy_sources_del(request: Request, sid: str):
+    require_admin(request)
+    srcs = [s for s in load_paid_sources() if s.get("id") != sid]
+    save_paid_sources(srcs)
+    return {"ok": True}
+
+@app.post("/api/admin/proxy-sources/{sid}/pull")
+def admin_proxy_sources_pull(request: Request, sid: str):
+    require_admin(request)
+    src = next((s for s in load_paid_sources() if s.get("id") == sid), None)
+    if not src:
+        raise HTTPException(status_code=404, detail="未找到该源")
+    res = pull_paid_source(src)
+    for s in load_paid_sources():
+        if s.get("id") == sid:
+            s["last_pull"] = time.time()
+            s["last_result"] = res.get("msg") or ("OK" if res.get("ok") else "失败")
+            break
+    save_paid_sources(load_paid_sources())
+    return {"ok": res.get("ok", False), **res}
+
+
+
 @app.post("/api/proxies/refresh")
 def proxy_refresh(request: Request):
     """后台重新爬取代理"""
@@ -722,8 +1105,16 @@ def pick_random_proxy():
     random.shuffle(good)
     return good[0]
 
-def pick_proxy_for(url):
-    """选代理优先级：指定代理 > 该站可用池 > 存活代理池 > 全池随机"""
+def pick_proxy_for(url, user_id=None):
+    """选代理优先级：我的住宅节点 > 指定代理 > 该站可用池 > 存活代理池 > 全池随机"""
+    # 0) 平台住宅池（第三方应用众包，质量最高，全局最优先）
+    try:
+        pool = [n for n in load_residential_nodes() if _node_fresh(n)]
+        if pool:
+            p = random.choice(pool)
+            return f"{p.get('protocol', 'http')}://{p['ip']}:{p['port']}"
+    except Exception:
+        pass
     # 1) 该站已检测的可用池
     try:
         if os.path.exists(TARGET_USABLE_FILE):
@@ -864,7 +1255,7 @@ async def api_proxy_visit(request: Request):
     last_proxy = None
     for attempt in range(retries):
         if proxy_url is None:
-            proxy_url = pick_proxy_for(url)
+            proxy_url = pick_proxy_for(url, user.get("id"))
         if not proxy_url:
             raise HTTPException(status_code=502, detail="代理池为空，请先在代理池页爬取代理")
         last_proxy = proxy_url
@@ -1455,6 +1846,14 @@ def download_json():
         return FileResponse(PROXY_JSON, filename="proxies.json", media_type="application/json")
     raise HTTPException(status_code=404, detail="JSON 不存在")
 
+@app.get("/download/residential-client.py")
+def download_residential_client():
+    """住宅代理客户端脚本下载（设备上运行，上报住宅节点）"""
+    path = "/opt/scrapling-web/residential_client.py"
+    if os.path.exists(path):
+        return FileResponse(path, filename="residential_client.py", media_type="text/plain")
+    raise HTTPException(status_code=404, detail="客户端脚本不存在")
+
 # ---------------- MCP Server 挂载（/mcp，供 AI agent 链接调用） ----------------
 # 整个控制台暴露为 MCP 工具（代理池/存活池/代理访问/体检/爬虫任务/会话/Scrapling 抓取），
 # 客户端用 streamable HTTP 连接 http://<host>:8080/mcp，带 Authorization: Bearer <MCP_TOKEN>
@@ -1725,3 +2124,6 @@ try:
     print("MCP server mounted at /mcp")
 except Exception as e:
     print("MCP mount failed:", e)
+
+threading.Thread(target=_paid_source_loop, daemon=True).start()
+print("paid-source loop started")

@@ -983,6 +983,25 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       </div>
     </div>
 
+    <!-- 住宅节点（应用众包） -->
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-home"/></svg> 住宅节点接入<small>把设备变成住宅代理：你的应用内置 App Token 静默上报用户设备 ip:port，平台验证通过后进「平台住宅池」，全局代理访问自动优先走住宅 IP（注册账号风控最优）。设备需开代理端口并做端口映射</small>
+        <button class="btn gray" style="float:right" onclick="window.open('/download/residential-client.py','_blank')">下载客户端脚本</button>
+      </h2>
+      <div class="msg" id="resMsg"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+        <input type="text" id="resIp" placeholder="公网 IP（客户端自动探测，可手动填）" style="max-width:190px">
+        <input type="text" id="resPort" placeholder="端口，如 3128" style="max-width:110px">
+        <button class="btn green" onclick="reportResidential()"><svg class="ic"><use href="#i-plus"/></svg> 上报节点</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>节点</th><th>来源</th><th>协议</th><th>状态</th><th>延迟</th><th>出口 IP</th><th>上报时间</th><th>操作</th></tr></thead>
+          <tbody id="resBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <h2>代理池 <small id="proxyTotal"></small></h2>
       <div class="toolbar">
@@ -1792,7 +1811,24 @@ curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的
   "exit_ip": "6.7.8.9", "ms": 8120, "attempts": 1,
   "result": {"type": "text", "text": "页面内容..."}}</div><div class="ep-note">exit_ip 保证 ≠ 服务器 IP：检测到透明代理（出口=服务器 IP）会自动丢弃并换下一个，绝不裸奔。screenshot 模式 result.type=image。访问成功会自动回写存活代理池，越用越准。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/records</span><span class="ep-desc">最近的代理访问记录</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tail</code><span class="req">必填</span></td><td>int</td><td>最近 N 条，默认 100</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxy/records?tail=20"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/visit/records/clear</span><span class="ep-desc">清空访问记录</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxy/visit/records/clear -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/check-target</span><span class="ep-desc">目标站代理体检（异步）：筛出能打开指定网址的代理（注册专用池）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址</td></tr><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>检测前 N 条，默认 100，最多 300</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxy/check-target   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com/register","limit":200}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
 {"running": true, "total": 200}  → 轮询 check-target/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/check-target/status</span><span class="ep-desc">目标体检进度与结果</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxy/check-target/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/target-usable</span><span class="ep-desc">某目标站的可用代理池（体检筛出的）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxy/target-usable?url=https%3A%2F%2Fexample.com"</div></div>
-        <div class="guide-sec-title" id="api-tasks">⑦ 爬虫任务（整站/定时/批量）</div>
+        <div class="guide-sec-title" id="api-residential">⑦ 住宅节点（第三方应用集成通道）</div>
+<div class="ep-note"><b>用途：</b>把你的应用变成住宅代理贡献端。应用内置 App Token，用户运行应用即静默上报设备 ip:port；平台后台验证通过后进「平台住宅池」，全局代理访问自动优先选用（注册账号风控最优）。设备需开代理端口并做端口映射。</div>
+<div class="ep-note"><b>鉴权：</b>应用通道请求头 <code>X-App-Token: &lt;AppToken&gt;</code>（管理后台「住宅节点池」创建应用获取）；自用模式用 <code>X-Api-Key</code>。</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/admin/apps</span><span class="ep-desc">[管理] 创建应用，返回 App Token（内置进你的应用）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>应用名称</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/admin/apps -H "X-Auth: 主PIN" -H "Content-Type: application/json" -d '{"name":"我的App"}'</div><div class="codeblock"><span class="cm"># 响应</span>
+{"ok": true, "app": {"id": "app-xxx", "name": "我的App", "token": "8f3a...64位令牌", "created_at": "..."}}</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/admin/apps</span><span class="ep-desc">[管理] 应用列表（含 App Token 与节点数）</span></div><div class="codeblock">curl -H "X-Auth: 主PIN" https://YOUR-SERVER:8080/api/admin/apps</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-del">DELETE</span><span class="ep-path">/api/admin/apps/{aid}</span><span class="ep-desc">[管理] 删除应用（该应用全部节点下线）</span></div><div class="codeblock">curl -X DELETE https://YOUR-SERVER:8080/api/admin/apps/app-xxx -H "X-Auth: 主PIN"</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/residential/report</span><span class="ep-desc">上报节点（应用静默上报设备 ip:port，后台自动验证，通过后进平台池）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>ip</code><span class="req">必填</span></td><td>string</td><td>设备公网 IP（应用先探测出口 IP）</td></tr><tr><td><code>port</code><span class="req">必填</span></td><td>string</td><td>设备代理端口（需端口映射，公网可达）</td></tr><tr><td><code>protocol</code></td><td>string</td><td>默认 http</td></tr><tr><td><code>name</code></td><td>string</td><td>节点名，默认应用名</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/residential/report -H "X-App-Token: <你的AppToken>" -H "Content-Type: application/json" -d '{"ip":"1.2.3.4","port":"3128","name":"用户设备"}'</div><div class="codeblock"><span class="cm"># 响应</span>
+{"ok": true, "node": {"node_id": "a1b2...", "status": "pending", ...}, "msg": "已接收，正在后台验证（约几秒），通过后进入平台住宅池"}</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/residential/heartbeat</span><span class="ep-desc">心跳保活（应用定期调用；超过 48h 无心跳的节点不再被选用）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>node_id</code><span class="req">必填</span></td><td>string</td><td>上报时返回的节点 ID</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/residential/heartbeat -H "X-App-Token: <你的AppToken>" -H "Content-Type: application/json" -d '{"node_id":"a1b2..."}'</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/residential/remove</span><span class="ep-desc">移除节点（用户卸载/退出时调用）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>node_id</code><span class="req">必填</span></td><td>string</td><td>节点 ID</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/residential/remove -H "X-App-Token: <你的AppToken>" -H "Content-Type: application/json" -d '{"node_id":"a1b2..."}'</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/residential/list</span><span class="ep-desc">我的节点列表（应用令牌=该应用全部节点）</span></div><div class="codeblock">curl -H "X-App-Token: <你的AppToken>" https://YOUR-SERVER:8080/api/residential/list</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/residential/pool</span><span class="ep-desc">平台住宅池（验证通过且新鲜的节点，全局代理访问自动优先选用）</span></div><div class="codeblock">curl -H "X-App-Token: <你的AppToken>" https://YOUR-SERVER:8080/api/residential/pool</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/admin/residential-nodes</span><span class="ep-desc">[管理] 平台节点池（可按 app / status 筛选）</span></div><div class="codeblock">curl -H "X-Auth: 主PIN" "https://YOUR-SERVER:8080/api/admin/residential-nodes?limit=100"</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/admin/residential-nodes/{nid}/remove</span><span class="ep-desc">[管理] 强制移除平台节点</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/admin/residential-nodes/a1b2.../remove -H "X-Auth: 主PIN"</div></div>
+<div class="ep-note"><b>客户端脚本（快速集成）：</b><code>python residential_client.py --api https://YOUR-SERVER:8080 --app-token &lt;AppToken&gt; --port 3128 --interval 300</code>；自用模式 <code>--api-key sk-xxx</code>。脚本自动：探测出口 IP → 上报 → 心跳保活。</div>
+
+<div class="guide-sec-title" id="api-tasks">⑦ 爬虫任务（整站/定时/批量）</div>
 <div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks</span><span class="ep-desc">全部爬虫任务列表（状态/已抓条数/日志大小）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/tasks</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks</span><span class="ep-desc">创建爬虫任务（容器隔离执行，可暂停/恢复/断点续爬）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>type</code><span class="req">必填</span></td><td>string</td><td>crawl=全站爬取(默认) | single=单页提取 | sitemap=站点地图 | xml=RSS | csv=CSV Feed | shopify=Shopify 商店产品</td></tr><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>任务名</td></tr><tr><td><code>start_urls</code><span class="req">必填</span></td><td>string</td><td>起始网址，逗号或换行分隔（shopify 可用 target_website）</td></tr><tr><td><code>target_website</code><span class="req">必填</span></td><td>string</td><td>仅 shopify：商店域名</td></tr><tr><td><code>fields</code><span class="req">必填</span></td><td>string</td><td>提取字段，每行「字段名:选择器」如「标题:h1
 价格:.price」</td></tr><tr><td><code>allowed_domains</code><span class="req">必填</span></td><td>string</td><td>允许域名（逗号分隔），不填自动取起始网址域名</td></tr><tr><td><code>crawl_rules</code><span class="req">必填</span></td><td>object/string</td><td>爬取规则 allow 列表</td></tr><tr><td><code>concurrency</code><span class="req">必填</span></td><td>int</td><td>并发数，默认 4</td></tr><tr><td><code>download_delay</code><span class="req">必填</span></td><td>float</td><td>请求间隔秒，默认 0</td></tr><tr><td><code>autothrottle</code><span class="req">必填</span></td><td>bool</td><td>自动限速</td></tr><tr><td><code>robots_txt_obey</code><span class="req">必填</span></td><td>bool</td><td>遵守 robots.txt</td></tr><tr><td><code>adaptive</code><span class="req">必填</span></td><td>bool</td><td>自适应反爬</td></tr><tr><td><code>proxy_rotation</code><span class="req">必填</span></td><td>bool</td><td>轮换代理池</td></tr><tr><td><code>export_format</code><span class="req">必填</span></td><td>string</td><td>jsonl(默认)/csv/json/xml</td></tr></tbody></table><div class="codeblock"># 全站爬取（自动跟随站内链接）
 curl -X POST https://YOUR-SERVER:8080/api/tasks   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"type":"crawl","name":"抓我网站","start_urls":"https://example.com","fields":"标题:h1\n价格:.price","proxy_rotation":true,"export_format":"csv"}'
@@ -1903,6 +1939,48 @@ Auth: <b style="color:var(--gold)">Authorization: Bearer sk-你的APIKey</b>
       <div id="adminSettings"></div>
       <div class="msg" id="adminSetMsg"></div>
       <button class="btn" onclick="adminSaveSettings()">保存设置</button>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-home"/></svg> 住宅节点池（应用众包）<small>创建应用拿到 App Token 内置进你的应用，用户运行即静默上报住宅 IP；验证后进平台池，全局代理访问自动优先</small>
+        <button class="btn gray" style="float:right" onclick="window.open('/download/residential-client.py','_blank')">下载接入脚本</button>
+      </h2>
+      <div class="msg" id="raMsg"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+        <input type="text" id="raAppName" placeholder="应用名称，如 我的App" style="max-width:170px">
+        <button class="btn green" onclick="addResApp()"><svg class="ic"><use href="#i-plus"/></svg> 创建应用令牌</button>
+      </div>
+      <div style="overflow-x:auto;margin-bottom:12px">
+        <table>
+          <thead><tr><th>应用</th><th style="min-width:220px">App Token（复制内置进应用）</th><th>节点数</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody id="raAppsBody"></tbody>
+        </table>
+      </div>
+      <h3 style="font-size:14px;margin:12px 0 6px;color:var(--muted)">平台住宅节点池（验证通过 / 全局自动优先选用）</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>节点</th><th>来源应用</th><th>状态</th><th>延迟</th><th>出口 IP</th><th>最近心跳</th><th>操作</th></tr></thead>
+          <tbody id="raNodesBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-shield"/></svg> 付费代理源<small>对接付费代理提取 API，自动拉取入库提升代理质量；密钥可暂不填写，先建源后配密钥</small></h2>
+      <div class="msg" id="psMsg"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+        <input type="text" id="psName" placeholder="源名称，如 快代理" style="max-width:130px">
+        <input type="text" id="psUrl" placeholder="提取接口地址 https://..." style="flex:1;min-width:240px;max-width:380px">
+        <input type="text" id="psKey" placeholder="密钥(可暂空)" style="max-width:170px">
+        <select id="psInterval" style="max-width:110px"><option value="6">6 小时</option><option value="1">1 小时</option><option value="12">12 小时</option><option value="24">24 小时</option></select>
+        <button class="btn green" onclick="addProxySource()"><svg class="ic"><use href="#i-plus"/></svg> 添加</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>名称</th><th>提取地址</th><th>密钥</th><th>间隔</th><th>上次拉取</th><th>结果</th><th>操作</th></tr></thead>
+          <tbody id="psBody"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -2033,12 +2111,12 @@ function switchTab(t) {
   document.getElementById("pageTitle").textContent = titles[t] || "控制台";
   if (t === "overview") loadOverview();
   if (t === "tools") { loadTools(); loadSessions(); }
-  if (t === "proxy") { loadProxies(0); loadProxyRecords(); loadAlive(); }
+  if (t === "proxy") { loadProxies(0); loadProxyRecords(); loadAlive(); loadResidential(); }
   if (t === "tasks") loadTasks();
   if (t === "status") loadStatus();
   if (t === "api") loadApiKeys();
   if (t === "quota") loadQuota();
-  if (t === "admin") adminLoad();
+  if (t === "admin") { adminLoad(); loadProxySources(); loadResAdmin(); }
 }
 
 /* ---------- 快捷任务 ---------- */
@@ -2302,6 +2380,144 @@ async function importAlive(verify) {
   } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
 }
 function downloadAlive(fmt) { window.open("/api/proxies/alive/export?format=" + fmt, "_blank"); }
+
+/* ---------- 我的住宅节点 ---------- */
+async function loadResidential() {
+  const body = document.getElementById("resBody");
+  try {
+    const d = await req("/residential/list");
+    if (!d.items || !d.items.length) {
+      body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">还没有住宅节点：设备上跑代理软件（如 gost/3proxy）并做端口映射，用客户端脚本或上面表单上报</td></tr>';
+      return;
+    }
+    body.innerHTML = d.items.map(n => {
+      const st = n.status === "verified" ? '<span class="tag alive">可用</span>'
+        : n.status === "pending" ? '<span class="tag">验证中</span>'
+        : '<span class="tag dead">' + escapeHtml(n.status) + "</span>";
+      return `<tr><td class="mono">${escapeHtml(n.ip)}:${escapeHtml(n.port)}</td><td>${escapeHtml(n.owner_name || "本人")}</td><td>${escapeHtml(n.protocol)}</td><td>${st}</td><td>${n.ms ? n.ms + "ms" : "-"}</td><td class="mono">${escapeHtml(n.exit_ip || "-")}</td><td style="color:var(--muted)">${escapeHtml(n.added_at)}</td><td><button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="removeResidential('${n.node_id}')">移除</button></td></tr>`;
+    }).join("");
+  } catch (e) { body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">加载失败</td></tr>'; }
+}
+async function reportResidential() {
+  const msg = document.getElementById("resMsg");
+  const ip = document.getElementById("resIp").value.trim();
+  const port = document.getElementById("resPort").value.trim();
+  if (!/^[\d.]+$/.test(ip) || !/^\d+$/.test(port)) { msg.textContent = "请填写公网 IP 和端口"; return; }
+  msg.innerHTML = "正在上报并后台验证...";
+  try {
+    const d = await req("/residential/report", { method: "POST", body: JSON.stringify({ ip, port }) });
+    msg.innerHTML = IC('check') + " " + escapeHtml(d.msg);
+    loadResidential();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function removeResidential(nid) {
+  try { await req("/residential/remove", { method: "POST", body: JSON.stringify({ node_id: nid }) }); loadResidential(); }
+  catch (e) { document.getElementById("resMsg").textContent = "移除失败: " + e.message; }
+}
+
+/* ---------- 付费代理源（管理） ---------- */
+async function loadProxySources() {
+  const body = document.getElementById("psBody");
+  try {
+    const d = await req("/admin/proxy-sources");
+    if (!d.sources || !d.sources.length) {
+      body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">暂无付费代理源：填上面的提取接口地址添加，密钥可稍后再配</td></tr>';
+      return;
+    }
+    body.innerHTML = d.sources.map(s => `<tr>
+      <td>${escapeHtml(s.name)}</td>
+      <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.api_url)}</td>
+      <td class="mono">${escapeHtml(s.api_key || "未配置")}</td>
+      <td>${s.interval_hours}h</td>
+      <td style="color:var(--muted)">${s.last_pull ? new Date(s.last_pull * 1000).toLocaleString() : "-"}</td>
+      <td>${escapeHtml(s.last_result || "-")}</td>
+      <td><button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="pullProxySource('${s.id}')">拉取</button>
+          <button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="delProxySource('${s.id}')">删除</button></td>
+    </tr>`).join("");
+  } catch (e) { body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">加载失败</td></tr>'; }
+}
+async function addProxySource() {
+  const msg = document.getElementById("psMsg");
+  const name = document.getElementById("psName").value.trim();
+  const api_url = document.getElementById("psUrl").value.trim();
+  const api_key = document.getElementById("psKey").value.trim();
+  const interval_hours = parseInt(document.getElementById("psInterval").value) || 6;
+  if (!api_url) { msg.textContent = "请填写提取接口地址"; return; }
+  try {
+    const d = await req("/admin/proxy-sources", { method: "POST", body: JSON.stringify({ name, api_url, api_key, interval_hours }) });
+    msg.innerHTML = IC('check') + " " + escapeHtml(d.msg);
+    document.getElementById("psName").value = ""; document.getElementById("psUrl").value = ""; document.getElementById("psKey").value = "";
+    loadProxySources();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function pullProxySource(sid) {
+  try {
+    const d = await req("/admin/proxy-sources/" + sid + "/pull", { method: "POST", body: "{}" });
+    document.getElementById("psMsg").innerHTML = (d.ok ? IC('check') : IC('x')) + " " + escapeHtml(d.msg);
+    loadProxySources();
+  } catch (e) { document.getElementById("psMsg").textContent = "拉取失败: " + e.message; }
+}
+async function delProxySource(sid) {
+  if (!confirm("删除该付费代理源？")) return;
+  try { await req("/admin/proxy-sources/" + sid, { method: "DELETE" }); loadProxySources(); }
+  catch (e) { document.getElementById("psMsg").textContent = "删除失败: " + e.message; }
+}
+
+/* ---------- 住宅节点池（管理） ---------- */
+async function loadResAdmin() {
+  const aBody = document.getElementById("raAppsBody");
+  const nBody = document.getElementById("raNodesBody");
+  try {
+    const d = await req("/admin/apps");
+    if (!d.apps || !d.apps.length) {
+      aBody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">暂无应用：输入应用名称点「创建应用令牌」，把令牌内置进你的应用</td></tr>';
+    } else {
+      aBody.innerHTML = d.apps.map(a => `<tr>
+        <td>${escapeHtml(a.name)}</td>
+        <td class="mono" style="font-size:11px;word-break:break-all">${escapeHtml(a.token)} <button class="btn gray" style="padding:2px 8px;font-size:11px" onclick="copyText('${a.token}')">复制</button></td>
+        <td>${a.node_count || 0}</td>
+        <td style="color:var(--muted)">${escapeHtml(a.created_at)}</td>
+        <td><button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="delResApp('${a.id}')">删除</button></td>
+      </tr>`).join("");
+    }
+  } catch (e) { aBody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">加载失败</td></tr>'; }
+  try {
+    const d = await req("/admin/residential-nodes?limit=100");
+    if (!d.items || !d.items.length) {
+      nBody.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">暂无节点：应用上线后用户运行即自动上报，验证通过后显示在这里</td></tr>';
+      return;
+    }
+    nBody.innerHTML = d.items.map(n => {
+      const st = n.status === "verified" ? '<span class="tag alive">可用</span>'
+        : n.status === "pending" ? '<span class="tag">验证中</span>'
+        : '<span class="tag dead">' + escapeHtml(n.status) + "</span>";
+      return `<tr><td class="mono">${escapeHtml(n.ip)}:${escapeHtml(n.port)}</td><td>${escapeHtml(n.owner_name || "-")}</td><td>${st}</td><td>${n.ms ? n.ms + "ms" : "-"}</td><td class="mono">${escapeHtml(n.exit_ip || "-")}</td><td style="color:var(--muted)">${escapeHtml(n.last_seen || "-")}</td><td><button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="removeResNode('${n.node_id}')">移除</button></td></tr>`;
+    }).join("");
+  } catch (e) { nBody.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">加载失败</td></tr>'; }
+}
+async function addResApp() {
+  const msg = document.getElementById("raMsg");
+  const name = document.getElementById("raAppName").value.trim();
+  if (!name) { msg.textContent = "请填写应用名称"; return; }
+  try {
+    const d = await req("/admin/apps", { method: "POST", body: JSON.stringify({ name }) });
+    msg.innerHTML = IC('check') + " " + escapeHtml(d.msg) + " 令牌已生成，可点「复制」";
+    document.getElementById("raAppName").value = "";
+    loadResAdmin();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function delResApp(aid) {
+  if (!confirm("删除该应用及其全部节点？")) return;
+  try { await req("/admin/apps/" + aid, { method: "DELETE" }); loadResAdmin(); }
+  catch (e) { document.getElementById("raMsg").textContent = "删除失败: " + e.message; }
+}
+async function removeResNode(nid) {
+  try { await req("/admin/residential-nodes/" + nid + "/remove", { method: "POST", body: "{}" }); loadResAdmin(); }
+  catch (e) { document.getElementById("raMsg").textContent = "移除失败: " + e.message; }
+}
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => { document.getElementById("raMsg").innerHTML = IC('check') + " 已复制 App Token"; });
+}
 async function refreshProxies() {
   document.getElementById("proxyMsg").innerHTML = '<span class="spin"></span> 后台爬取已启动，约 30-60 秒后刷新';
   try { await req("/proxies/refresh", { method: "POST", body: "{}" }); } catch (e) { document.getElementById("proxyMsg").textContent = e.message; }
