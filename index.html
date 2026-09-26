@@ -645,6 +645,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
     <symbol id="i-download" viewBox="0 0 24 24">
       <path d="M12 3.5V15M6.5 10.5L12 16l5.5-5.5M4.5 20h15"/>
     </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M12 15.5V4M6.5 8.5L12 3l5.5 5.5M4.5 20h15"/>
+    </symbol>
     <symbol id="i-trash" viewBox="0 0 24 24">
       <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13.5h9L17.5 7M10 11v6M14 11v6"/>
     </symbol>
@@ -945,9 +948,20 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
     <div class="card">
       <h2><span class="dot g"></span> 存活代理池<small>存活检测通过的代理自动入库；不填指定代理访问时，优先用：该站可用池 → 存活池 → 全池</small>
         <button class="btn gray" style="float:right" onclick="clearAlive()" id="aliveClearBtn">清空存活池</button>
+        <button class="btn gray" style="float:right;margin-right:8px" onclick="downloadAlive('json')"><svg class="ic"><use href="#i-download"/></svg> 下载 JSON</button>
+        <button class="btn gray" style="float:right;margin-right:8px" onclick="downloadAlive('csv')"><svg class="ic"><use href="#i-download"/></svg> 下载 CSV</button>
         <button class="btn green" style="float:right;margin-right:8px" onclick="checkAlive()" id="aliveCheckBtn"><svg class="ic"><use href="#i-refresh"/></svg> 重新检测</button>
       </h2>
       <div class="msg" id="aliveMsg"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+        <input type="text" id="aliveAdd" placeholder="手动添加一条，如 1.2.3.4:8080" style="max-width:220px">
+        <button class="btn" onclick="addAlive()"><svg class="ic"><use href="#i-plus"/></svg> 添加</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+        <textarea id="aliveImport" placeholder="批量导入，每行一个 ip:port（支持 # 注释行）&#10;1.1.1.1:8080&#10;2.2.2.2:3128" style="flex:1;min-width:260px;max-width:460px;min-height:56px"></textarea>
+        <button class="btn green" onclick="importAlive(true)"><svg class="ic"><use href="#i-upload"/></svg> 导入并验证</button>
+        <button class="btn gray" onclick="importAlive(false)">仅入库不验证</button>
+      </div>
       <div style="overflow-x:auto">
         <table>
           <thead><tr><th>代理 IP</th><th>端口</th><th>协议</th><th>延迟</th><th>出口 IP</th><th>检测时间</th><th>操作</th></tr></thead>
@@ -2263,6 +2277,31 @@ async function clearAlive() {
   try { await req("/proxies/alive/clear", { method: "POST", body: "{}" }); loadAlive(); }
   catch (e) { document.getElementById("aliveMsg").textContent = "清空失败: " + e.message; }
 }
+async function addAlive() {
+  const msg = document.getElementById("aliveMsg");
+  const v = document.getElementById("aliveAdd").value.trim();
+  if (!/^[\d.]+:\d+$/.test(v)) { msg.textContent = "格式应为 ip:port，如 1.2.3.4:8080"; return; }
+  const parts = v.split(":");
+  msg.innerHTML = "正在验证并添加 <b>" + escapeHtml(v) + "</b>...";
+  try {
+    const d = await req("/proxies/alive/add", { method: "POST", body: JSON.stringify({ ip: parts[0], port: parts[1] }) });
+    msg.innerHTML = IC('check') + " 已添加，延迟 " + (d.added.ms ? d.added.ms + "ms" : "未验证") + "，存活池共 <b style='color:var(--accent2)'>" + d.total + "</b> 条";
+    document.getElementById("aliveAdd").value = "";
+    loadAlive();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function importAlive(verify) {
+  const msg = document.getElementById("aliveMsg");
+  const text = document.getElementById("aliveImport").value;
+  if (!text.trim()) { msg.textContent = "请粘贴要导入的代理（每行 ip:port）"; return; }
+  msg.innerHTML = "正在导入" + (verify ? "并并发验证" : "") + "，请稍候...";
+  try {
+    const d = await req("/proxies/alive/import", { method: "POST", body: JSON.stringify({ text, verify }) });
+    msg.innerHTML = IC('check') + " 导入 <b>" + d.imported + "</b> 条：存活 <b style='color:var(--accent2)'>" + d.alive + "</b>，重复 " + d.duplicated + (d.dead ? "，失效 " + d.dead : "") + "，池共 " + d.total + " 条";
+    loadAlive();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+function downloadAlive(fmt) { window.open("/api/proxies/alive/export?format=" + fmt, "_blank"); }
 async function refreshProxies() {
   document.getElementById("proxyMsg").innerHTML = '<span class="spin"></span> 后台爬取已启动，约 30-60 秒后刷新';
   try { await req("/proxies/refresh", { method: "POST", body: "{}" }); } catch (e) { document.getElementById("proxyMsg").textContent = e.message; }

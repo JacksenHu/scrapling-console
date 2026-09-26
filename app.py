@@ -519,6 +519,125 @@ async def proxy_alive_remove(request: Request):
     cur = [it for it in cur if not (it.get("ip") == ip and str(it.get("port")) == port)]
     save_alive(cur)
     return {"ok": True, "left": len(cur)}
+@app.post("/api/proxies/alive/add")
+async def proxy_alive_add(request: Request):
+    """手动添加一条代理到存活池（默认立即验证，verify=false 仅入库）"""
+    body = await request.json()
+    ip = (body.get("ip") or "").strip()
+    port = str(body.get("port") or "").strip()
+    protocol = (body.get("protocol") or "http").strip().lower() or "http"
+    verify = body.get("verify", True)
+    if not ip or not port.isdigit():
+        raise HTTPException(status_code=400, detail="请填写有效的 IP 和端口（格式 ip:port）")
+    item = {"ip": ip, "port": port, "protocol": protocol, "ms": None, "exit_ip": None,
+            "checked_at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    if verify:
+        proxy = f"{protocol}://{ip}:{port}"
+        try:
+            r = requests.get("https://www.baidu.com", proxies={"http": proxy, "https": proxy},
+                             timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+            if r.status_code != 200:
+                raise Exception(f"HTTP {r.status_code}")
+            item["ms"] = int(r.elapsed.total_seconds() * 1000)
+            try:
+                er = requests.get(ECHO_SERVICE, proxies={"http": proxy, "https": proxy}, timeout=8)
+                item["exit_ip"] = er.text.strip()[:40]
+            except Exception:
+                pass
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"验证未通过：{e}")
+    cur, _ = load_alive()
+    cur = [it for it in cur if not (it.get("ip") == ip and str(it.get("port")) == port)]
+    cur.append(item)
+    save_alive(cur)
+    return {"ok": True, "added": item, "total": len(cur)}
+
+
+@app.post("/api/proxies/alive/import")
+async def proxy_alive_import(request: Request):
+    """批量导入代理到存活池：text 支持每行 ip:port 或 JSON 数组/对象列表，自动去重，默认并发验证"""
+    body = await request.json()
+    text = body.get("text") or ""
+    verify = body.get("verify", True)
+    parsed = []
+    if isinstance(text, list):
+        for item in text:
+            if isinstance(item, dict):
+                parsed.append((str(item.get("ip") or "").strip(), str(item.get("port") or "").strip(),
+                               (item.get("protocol") or "http").strip().lower()))
+            else:
+                s = str(item).strip()
+                if ":" in s and s.rsplit(":", 1)[1].isdigit():
+                    p1, p2 = s.rsplit(":", 1)
+                    parsed.append((p1.strip(), p2.strip(), "http"))
+    else:
+        for line in str(text).splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if ":" in line and line.rsplit(":", 1)[1].isdigit():
+                p1, p2 = line.rsplit(":", 1)
+                parsed.append((p1.strip(), p2.strip(), "http"))
+    if not parsed:
+        raise HTTPException(status_code=400, detail="未解析到有效代理（每行 ip:port）")
+    cur, _ = load_alive()
+    keys = {f"{it.get('ip')}:{it.get('port')}" for it in cur}
+    new = [p for p in parsed if f"{p[0]}:{p[1]}" not in keys]
+    if not new:
+        return {"ok": True, "imported": len(parsed), "alive": 0, "duplicated": len(parsed), "total": len(cur),
+                "msg": "导入的代理已全部存在于存活池"}
+    items = [{"ip": ip, "port": port, "protocol": proto, "ms": None, "exit_ip": None,
+              "checked_at": time.strftime("%Y-%m-%d %H:%M:%S")} for ip, port, proto in new]
+    if verify:
+        def test_one(it):
+            proxy = f"{it['protocol']}://{it['ip']}:{it['port']}"
+            try:
+                r = requests.get("https://www.baidu.com", proxies={"http": proxy, "https": proxy},
+                                 timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+                if r.status_code != 200:
+                    return None
+                it["ms"] = int(r.elapsed.total_seconds() * 1000)
+                try:
+                    er = requests.get(ECHO_SERVICE, proxies={"http": proxy, "https": proxy}, timeout=8)
+                    it["exit_ip"] = er.text.strip()[:40]
+                except Exception:
+                    pass
+                return it
+            except Exception:
+                return None
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as ex:
+            verified = [it for it in ex.map(test_one, items) if it]
+        if not verified:
+            raise HTTPException(status_code=400, detail="导入的代理全部未通过验证，未入库（可点「仅入库不验证」）")
+        items = verified
+    cur = [it for it in cur if f"{it.get('ip')}:{it.get('port')}" not in {f"{i['ip']}:{i['port']}" for i in items}]
+    cur += items
+    save_alive(cur)
+    return {"ok": True, "imported": len(parsed), "alive": len(items),
+            "duplicated": len(parsed) - len(new), "dead": len(new) - len(items), "total": len(cur)}
+
+
+@app.get("/api/proxies/alive/export")
+def proxy_alive_export(request: Request, format: str = "csv"):
+    """导出存活代理池（csv / json 下载）"""
+    items, updated_at = load_alive()
+    if not items:
+        raise HTTPException(status_code=404, detail="存活池为空")
+    if format == "json":
+        content = json.dumps({"updated_at": updated_at, "total": len(items), "items": items},
+                             ensure_ascii=False, indent=2)
+        return Response(content, media_type="application/json",
+                        headers={"Content-Disposition": 'attachment; filename="alive_proxies.json"'})
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["ip", "port", "protocol", "ms", "exit_ip", "checked_at"])
+    for it in items:
+        w.writerow([it.get("ip", ""), it.get("port", ""), it.get("protocol", "http"),
+                    it.get("ms", ""), it.get("exit_ip", ""), it.get("checked_at", "")])
+    return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="alive_proxies.csv"'})
+
+
 
 
 @app.post("/api/proxies/refresh")
