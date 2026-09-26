@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API 文档 · Scrapling 云抓取平台</title>
+<meta name="description" content="Scrapling 云抓取平台开放 API 文档：REST 全量接口 + MCP 工具清单 + 快速开始，让任何程序与 AI Agent 接入网页抓取、反爬绕过、代理访问能力。">
+<style>
+:root{
+  --page:#0a0b09;--bg:#141613;--panel-2:#1b1e19;--border:rgba(255,255,255,.07);
+  --ink-1:#eef1e9;--ink-2:#b3b9ab;--ink-3:#8a9184;
+  --accent:#B6E018;--accent-2:#5FD3B2;--accent-soft:rgba(182,224,24,.13);--on-accent:#12140d;--glow:rgba(182,224,24,.28);
+  --up:#3FCB86;--down:#FF4D3D;--warn:#E8A33D;--red:#FF4D3D;--red-soft:rgba(255,77,61,.12);--teal:#5FD3B2;
+  --shadow:0 1px 3px rgba(0,0,0,.35);--shadow-lg:0 40px 90px -50px rgba(0,0,0,.75);
+  --r:18px;--r-sm:11px;--r-lg:28px;
+  --font-ui:-apple-system,"Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+  --font-mono:"JetBrains Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --muted:var(--ink-3);--text:var(--ink-1);--gold:var(--warn);--line:var(--border);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink-1);font-family:var(--font-ui);font-size:14px;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:14px 26px;background:rgba(10,11,9,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:.02em}
+.logo .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--glow)}
+.top .sp{flex:1}
+.top a.btn{border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--ink-2);background:var(--panel-2)}
+.top a.btn:hover{color:var(--ink-1);border-color:var(--accent)}
+.top a.btn.solid{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.top a.btn.solid:hover{filter:brightness(1.08)}
+.wrap{max-width:1060px;margin:0 auto;padding:34px 26px 70px}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--red);text-transform:uppercase;margin-bottom:14px}
+.hero-tag .p{color:var(--ink-3)}
+h1{font-size:30px;line-height:1.25;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+h1 .g{color:var(--accent)}
+.lead{color:var(--ink-2);font-size:14.5px;max-width:720px;margin:0 0 8px}
+.lead code{color:var(--accent);font-family:var(--font-mono);font-size:13px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-size:15px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:8px;color:var(--ink-1)}
+.card h2 small{font-size:12px;color:var(--ink-3);font-weight:400;margin-left:8px}
+.guide-sec-title{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em;margin:18px 0 10px}
+.gs-card{border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:12px;background:var(--bg)}
+.gs-card h4{margin:0 0 8px;font-size:14px;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+.codeblock{background:var(--page);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--ink-2);overflow:auto;white-space:pre-wrap}
+.cm{color:var(--ink-3)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--ink-3);font-weight:600;font-size:11.5px;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink-2);font-size:12.5px;vertical-align:top}
+td code{font-family:var(--font-mono);color:var(--accent);font-size:11.5px}
+.doc-nav{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+.doc-nav a{font-size:12px;font-weight:600;color:var(--ink-2);border:1px solid var(--border);border-radius:999px;padding:5px 12px;text-decoration:none;background:var(--panel-2);transition:color .12s,border-color .12s}
+.doc-nav a:hover{color:var(--ink-1);border-color:var(--accent)}
+.endpoint{border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px 12px;margin-bottom:12px;background:var(--bg)}
+.ep-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.method{font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;letter-spacing:.05em;font-family:var(--font-mono)}
+.m-get{background:var(--accent-soft);color:var(--accent)}
+.m-post{background:rgba(95,211,178,.14);color:var(--accent-2)}
+.m-del{background:var(--red-soft);color:var(--red)}
+.m-oth{background:rgba(232,163,61,.14);color:var(--warn)}
+.ep-path{font-family:var(--font-mono);font-size:13px;color:var(--ink-1);font-weight:600}
+.ep-desc{font-size:12.5px;color:var(--ink-2);flex:1;min-width:200px}
+.ep-desc b{color:var(--ink-1)}
+.ptab{width:100%;margin:6px 0 10px}
+.ptab th{font-size:11px;color:var(--ink-3);font-weight:600}
+.ptab td,.ptab th{padding:4px 8px;border-bottom:1px solid var(--border);font-size:12px}
+.ptab td code{color:var(--accent);font-size:11.5px}
+.req{color:var(--red);font-size:10.5px;font-weight:600;margin-left:2px}
+.ep-note{font-size:12px;color:var(--ink-3);margin-top:6px}
+.tg-tip{background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.25);color:var(--warn);font-size:12.5px;padding:10px 14px;border-radius:var(--r-sm);margin-top:12px}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);color:var(--ink-3);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+@media(max-width:720px){.wrap{padding:22px 16px 50px}h1{font-size:24px}.top{padding:12px 16px}}
+
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo"><span class="dot"></span>Scrapling 云抓取平台</div>
+  <div class="sp"></div>
+  <a class="btn" href="/">返回首页</a>
+  <a class="btn solid" href="/">登录 / 进入控制台</a>
+</div>
+<div class="wrap">
+  <div class="hero-tag"><span>OPEN API</span><span class="p">·</span><span>REST + MCP</span></div>
+  <h1>Scrapling <span class="g">开放 API</span> 文档</h1>
+  <p class="lead">网页抓取、反爬绕过、代理访问、全站爬取——全部能力开放为 <code>REST API</code> 与 <code>MCP Server</code>，任何程序 / AI Agent 一行接入。文档免费公开，接口调用消耗你的账户额度。</p>
+  <div class="tg-tip">接入前准备：注册账号 → 控制台「API 接入」页生成 <b>API Key（sk- 开头）</b> → REST 用 <code>X-Api-Key</code> 头、MCP 用 <code>Authorization: Bearer</code>。注册即送 20 次免费额度。</div>
+<div class="card">
+        <h2><svg class="ic"><use href="#i-book"/></svg> API 文档<small>全量 REST 接口 + MCP 工具清单，让任何程序 / AI Agent 接入你的抓取能力</small></h2>
+        <div class="doc-nav">
+          <a href="#api-start">快速开始</a>
+          <a href="#api-auth">① 系统与认证</a>
+          <a href="#api-quick">② 快捷抓取</a>
+          <a href="#api-adv">③ 高级工具</a>
+          <a href="#api-mcp">④ MCP 代理</a>
+          <a href="#api-proxy">⑤ 代理池</a>
+          <a href="#api-visit">⑥ 代理访问</a>
+          <a href="#api-tasks">⑦ 爬虫任务</a>
+          <a href="#api-sess">⑧ 会话</a>
+          <a href="#api-mcp-tools">MCP 工具清单</a>
+        </div>
+
+        <div class="guide-sec-title" id="api-start">快速开始（Python）</div>
+        <div class="gs-card">
+          <h4><svg class="ic"><use href="#i-rocket"/></svg> 一个完整链路：注册 → 拿 API Key → 抓取</h4>
+          <div class="codeblock"><span class="cm"># 1. 注册并登录（免费，注册即送额度）</span>
+import requests
+BASE = "https://YOUR-SERVER:8080"
+r = requests.post(f"{BASE}/api/auth/register", json={"email": "you@example.com", "password": "yourpass123"})
+token = r.json()["token"]          <span class="cm"># 会话 token</span>
+H = {"X-Session-Token": token}
+
+<span class="cm"># 2. 创建 API Key（REST / MCP 都用它鉴权）</span>
+r = requests.post(f"{BASE}/api/me/apikeys", json={"name": "我的程序"}, headers=H)
+API_KEY = r.json()["key"]         <span class="cm"># sk- 开头，只显示一次</span>
+A = {"X-Api-Key": API_KEY, "Content-Type": "application/json"}
+
+<span class="cm"># 3. 快捷抓取一个网页（普通/反爬/截图/批量任意选）</span>
+r = requests.post(f"{BASE}/api/mcp/quick", json={"mode": "stealthy", "url": "https://example.com"}, headers=A)
+print(r.json()["result"]["text"][:500])   <span class="cm"># 网页内容</span>
+
+<span class="cm"># 4. 用代理池的 IP 访问注册页（防风控）</span>
+r = requests.post(f"{BASE}/api/proxy/visit", json={"url": "https://example.com/register", "mode": "browser", "retries": 2}, headers=A)
+print(r.json()["exit_ip"])        <span class="cm"># 出口 IP（保证不是你的服务器 IP）</span></div>
+        </div>
+
+        <div class="gs-card">
+          <h4><svg class="ic"><use href="#i-bulb"/></svg> 鉴权与规则</h4>
+          <table class="ptab"><tbody>
+            <tr><td><code>X-Api-Key: sk-...</code></td><td>REST 接口鉴权头（除登录/注册/公开接口外都必需），每次调用按接口扣额度</td></tr>
+            <tr><td><code>Authorization: Bearer sk-...</code></td><td>MCP Server 鉴权（Streamable HTTP）</td></tr>
+            <tr><td><code>X-Session-Token: ...</code></td><td>网页登录会话 token（/api/auth/login 返回），仅用于用户相关接口</td></tr>
+            <tr><td><code>X-Auth: ...</code></td><td>平台主 PIN（主人通道专用）</td></tr>
+          </tbody></table>
+          <div class="ep-note">错误返回 HTTP 状态码 + JSON <code>{"detail": "原因"}</code>；额度不足返回 402；未授权 401；无权限 403。</div>
+        </div>
+
+        <div class="guide-sec-title" id="api-auth">① 系统与认证</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/ping</span><span class="ep-desc">存活检测（免鉴权）</span></div><div class="codeblock">curl https://YOUR-SERVER:8080/api/ping</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "ts": "..."}</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/status</span><span class="ep-desc">控制台整体状态：MCP 服务在线 / 代理池总数 / 存活池 / 任务数 / 用户数</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/auth/register</span><span class="ep-desc">邮箱注册（免鉴权，注册即送额度）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>email</code><span class="req">必填</span></td><td>string</td><td>邮箱地址</td></tr><tr><td><code>password</code><span class="req">必填</span></td><td>string</td><td>至少 6 位</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/auth/register -H "Content-Type: application/json" -d '{"email":"you@example.com","password":"yourpass123"}'</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"token": "会话token", "user": {"email": "...", "quota": 20}}</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/auth/login</span><span class="ep-desc">邮箱登录（免鉴权）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>account</code><span class="req">必填</span></td><td>string</td><td>邮箱</td></tr><tr><td><code>password</code><span class="req">必填</span></td><td>string</td><td>密码</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/auth/login -H "Content-Type: application/json" -d '{"account":"you@example.com","password":"yourpass123"}'</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/auth/logout</span><span class="ep-desc">退出登录（用 X-Session-Token）</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/auth/logout -H "X-Session-Token: 你的token"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/me</span><span class="ep-desc">当前用户信息 + 近 30 条用量（用 X-Session-Token 或 X-Api-Key）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>最近用量条数，默认 50</td></tr></tbody></table><div class="codeblock">curl -H "X-Session-Token: 你的token" https://YOUR-SERVER:8080/api/me</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/me/password</span><span class="ep-desc">修改密码</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>old</code><span class="req">必填</span></td><td>string</td><td>原密码</td></tr><tr><td><code>new</code><span class="req">必填</span></td><td>string</td><td>新密码 ≥6 位</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/me/apikeys</span><span class="ep-desc">列出我的 API Key（主人通道返回空）</span></div><div class="codeblock">curl -H "X-Session-Token: 你的token" https://YOUR-SERVER:8080/api/me/apikeys</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/me/apikeys</span><span class="ep-desc">创建 API Key</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>Key 名称，默认「默认」</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/me/apikeys -H "X-Session-Token: 你的token" -H "Content-Type: application/json" -d '{"name":"我的爬虫程序"}'</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"key": "sk-xxxxxxxx（只显示一次，请立即保存）"}</div></div><div class="endpoint"><div class="ep-head"><span class="method m-del">DELETE</span><span class="ep-path">/api/me/apikeys/{kid}</span><span class="ep-desc">删除一个 API Key</span></div><div class="codeblock">curl -X DELETE https://YOUR-SERVER:8080/api/me/apikeys/你的keyID -H "X-Session-Token: 你的token"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/me/usage</span><span class="ep-desc">我的用量明细（时间/动作/消耗）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>条数，默认 50</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/stats-public</span><span class="ep-desc">公开统计：用户数 / API 调用数 / Key 数（免鉴权）</span></div><div class="codeblock">curl https://YOUR-SERVER:8080/api/stats-public</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/settings-public</span><span class="ep-desc">公开设置：站点名 / 支付状态 / 客服联系方式（免鉴权）</span></div><div class="codeblock">curl https://YOUR-SERVER:8080/api/settings-public</div></div>
+        <div class="guide-sec-title" id="api-quick">② 快捷抓取（核心）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/mcp/quick</span><span class="ep-desc">一键抓取：等同控制台「快捷任务」。普通抓 / 反爬抓 / 提取元素 / 截图 / 批量，自动编排参数</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>mode</code><span class="req">必填</span></td><td>string</td><td>simple=普通抓取 | stealthy=反爬抓取(穿隐身衣) | extract=按选择器提取 | screenshot=浏览器截图 | make_request=普通HTTP请求 | links=提取页面链接 | bulk=批量普通抓 | bulk_stealthy=批量反爬抓</td></tr><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址（bulk 模式用 urls 字段）</td></tr><tr><td><code>urls</code><span class="req">必填</span></td><td>string</td><td>批量模式：网址列表，逗号或换行分隔</td></tr><tr><td><code>css_selector</code><span class="req">必填</span></td><td>string</td><td>extract 模式必填：CSS 选择器</td></tr><tr><td><code>extraction_type</code><span class="req">必填</span></td><td>string</td><td>markdown(默认)/html/text，透传上游工具</td></tr><tr><td><code>adaptive</code><span class="req">必填</span></td><td>bool</td><td>自适应反爬增强（走容器执行）</td></tr><tr><td><code>use_proxy</code><span class="req">必填</span></td><td>bool</td><td>是否轮换代理池（防风控）</td></tr><tr><td><code>dev_cache</code><span class="req">必填</span></td><td>bool</td><td>开发缓存模式</td></tr></tbody></table><div class="codeblock"># 普通抓取
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"simple","url":"https://example.com"}'
+
+# 反爬抓取（验证码/Cloudflare 盾牌）
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"stealthy","url":"https://example.com","use_proxy":true}'
+
+# 提取商品标题/价格
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"extract","url":"https://example.com/shop","css_selector":".product .title"}'
+
+# 批量抓 5 个页面
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"bulk","urls":"https://a.com/p1,https://a.com/p2,https://a.com/p3"}'
+
+# 浏览器截图
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"screenshot","url":"https://example.com"}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "mode": "stealthy",
+  "steps": [{"tool": "stealthy_fetch", "args": {...}}],
+  "result": {"type": "text", "text": "页面内容..."},
+  "status": "done"}</div><div class="ep-note">响应里 result.text 即抓取内容；screenshot 模式 result.type=image，images 为 base64 图。</div></div>
+        <div class="guide-sec-title" id="api-adv">③ 高级工具（上游 Scrapling 能力）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/scrapling/advanced</span><span class="ep-desc">通用入口：按 tool 名调用高级能力（等同控制台「高级工具」页）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tool</code><span class="req">必填</span></td><td>string</td><td>page_markdown | site_markdown | capture_xhr | selector_gen | extract_cli</td></tr><tr><td><code>args</code><span class="req">必填</span></td><td>object</td><td>对应工具的参数字典，见下</td></tr></tbody></table><div class="codeblock"># 网页转 Markdown（喂给 LLM 前不用洗）
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"page_markdown","args":{"url":"https://example.com"}}'
+
+# 整站爬成 Markdown 语料库（默认 20 页）
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"site_markdown","args":{"url":"https://example.com","max_pages":30}}'
+
+# 捕获页面背后所有 XHR/API 接口（不用逆向前端 JS）
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"capture_xhr","args":{"url":"https://example.com"}}'
+
+# 验证选择器是否有效
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"selector_gen","args":{"url":"https://example.com","css":".price"}}' </div><div class="ep-note">工具参数：page_markdown(url, css_selector) · site_markdown(url, max_pages) · capture_xhr(url, timeout) · selector_gen(url, css/xpath/text 三选一) · extract_cli(url, format=md/txt/html, css_selector, mode=get/fetch/stealthy-fetch, impersonate=chrome)。</div></div>
+        <div class="guide-sec-title" id="api-mcp">④ MCP 代理（把抓取服务当 API 调）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/mcp/tools</span><span class="ep-desc">列出 Scrapling 抓取服务（上游容器）全部工具</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/mcp/tools</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/mcp/call</span><span class="ep-desc">调用任意 Scrapling 工具（fetch / stealthy_fetch / make_request / bulk_get / screenshot / open_session / session_fetch …）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>工具名，先调 /api/mcp/tools 查全量</td></tr><tr><td><code>arguments</code><span class="req">必填</span></td><td>object</td><td>工具参数字典，如 {"url":"https://example.com","timeout":30000}</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/mcp/call   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"name":"stealthy_fetch","arguments":{"url":"https://example.com"}}' </div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/mcp/session/reset</span><span class="ep-desc">重置 MCP 会话（会话异常时用）</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/mcp/session/reset -H "X-Api-Key: sk-你的APIKey"</div></div>
+        <div class="guide-sec-title" id="api-proxy">⑤ 代理池</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies</span><span class="ep-desc">查询代理池列表（约 6000+ 条，来自公开代理源）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>q</code><span class="req">必填</span></td><td>string</td><td>按 IP/端口/协议过滤</td></tr><tr><td><code>source</code><span class="req">必填</span></td><td>string</td><td>按来源过滤</td></tr><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>默认 200</td></tr><tr><td><code>offset</code><span class="req">必填</span></td><td>int</td><td>分页偏移</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies?limit=20&q=1.2"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/sources</span><span class="ep-desc">代理来源列表及各自条数</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxies/sources</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/check</span><span class="ep-desc">并发存活检测（异步），通过的自动写入存活代理池</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>检测前 N 条，默认 100，最多 300</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies/check?limit=100"</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"running": true, "total": 100}  → 用 check/status 轮询结果</div><div class="ep-note">返回 running=true 表示检测进行中；轮询 /api/proxies/check/status 直到 running=false。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/check/status</span><span class="ep-desc">存活检测进度与结果（checked/alive/dead/items）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxies/check/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/alive</span><span class="ep-desc">存活代理池（检测通过的代理，代理访问时自动优先）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>默认 200</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies/alive?limit=50"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxies/alive/remove</span><span class="ep-desc">从存活池移除单条代理</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>ip</code><span class="req">必填</span></td><td>string</td><td>代理 IP</td></tr><tr><td><code>port</code><span class="req">必填</span></td><td>string</td><td>端口</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxies/alive/remove -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" -d '{"ip":"1.1.189.58","port":"8080"}'</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxies/alive/clear</span><span class="ep-desc">清空整个存活代理池</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxies/alive/clear -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxies/refresh</span><span class="ep-desc">重新抓取公开代理源（全量刷新代理池）</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxies/refresh -H "X-Api-Key: sk-你的APIKey"</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "total": 6200, "sources": 8}</div></div>
+        <div class="guide-sec-title" id="api-visit">⑥ 用代理访问网址（注册防风控核心）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/visit</span><span class="ep-desc">用代理池的 IP 打开一个网址（注册页/目标页），自动防 IP 泄漏</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址，如 https://example.com/register</td></tr><tr><td><code>mode</code><span class="req">必填</span></td><td>string</td><td>plain=纯HTTP请求(最快) | browser=隐身浏览器渲染(推荐注册页) | screenshot=浏览器截图，默认 plain</td></tr><tr><td><code>proxy</code><span class="req">必填</span></td><td>string</td><td>指定代理 ip:port 或 http://ip:port，不填自动从目标可用池→存活池→全池挑选</td></tr><tr><td><code>retries</code><span class="req">必填</span></td><td>int</td><td>失败自动换 IP 重试次数，默认 1，最大 5</td></tr><tr><td><code>timeout</code><span class="req">必填</span></td><td>int</td><td>超时秒数 5-120，默认 30</td></tr></tbody></table><div class="codeblock"># 用代理打开注册页（浏览器隐身模式，自动换 IP 重试）
+curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com/register","mode":"browser","retries":2}'
+
+# 指定一个代理直连
+curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com","mode":"plain","proxy":"1.2.3.4:8080"}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "mode": "browser", "proxy": "http://1.2.3.4:8080",
+  "exit_ip": "6.7.8.9", "ms": 8120, "attempts": 1,
+  "result": {"type": "text", "text": "页面内容..."}}</div><div class="ep-note">exit_ip 保证 ≠ 服务器 IP：检测到透明代理（出口=服务器 IP）会自动丢弃并换下一个，绝不裸奔。screenshot 模式 result.type=image。访问成功会自动回写存活代理池，越用越准。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/records</span><span class="ep-desc">最近的代理访问记录</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tail</code><span class="req">必填</span></td><td>int</td><td>最近 N 条，默认 100</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxy/records?tail=20"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/visit/records/clear</span><span class="ep-desc">清空访问记录</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxy/visit/records/clear -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/check-target</span><span class="ep-desc">目标站代理体检（异步）：筛出能打开指定网址的代理（注册专用池）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址</td></tr><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>检测前 N 条，默认 100，最多 300</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxy/check-target   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com/register","limit":200}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"running": true, "total": 200}  → 轮询 check-target/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/check-target/status</span><span class="ep-desc">目标体检进度与结果</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxy/check-target/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/target-usable</span><span class="ep-desc">某目标站的可用代理池（体检筛出的）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxy/target-usable?url=https%3A%2F%2Fexample.com"</div></div>
+        <div class="guide-sec-title" id="api-tasks">⑦ 爬虫任务（整站/定时/批量）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks</span><span class="ep-desc">全部爬虫任务列表（状态/已抓条数/日志大小）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/tasks</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks</span><span class="ep-desc">创建爬虫任务（容器隔离执行，可暂停/恢复/断点续爬）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>type</code><span class="req">必填</span></td><td>string</td><td>crawl=全站爬取(默认) | single=单页提取 | sitemap=站点地图 | xml=RSS | csv=CSV Feed | shopify=Shopify 商店产品</td></tr><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>任务名</td></tr><tr><td><code>start_urls</code><span class="req">必填</span></td><td>string</td><td>起始网址，逗号或换行分隔（shopify 可用 target_website）</td></tr><tr><td><code>target_website</code><span class="req">必填</span></td><td>string</td><td>仅 shopify：商店域名</td></tr><tr><td><code>fields</code><span class="req">必填</span></td><td>string</td><td>提取字段，每行「字段名:选择器」如「标题:h1
+价格:.price」</td></tr><tr><td><code>allowed_domains</code><span class="req">必填</span></td><td>string</td><td>允许域名（逗号分隔），不填自动取起始网址域名</td></tr><tr><td><code>crawl_rules</code><span class="req">必填</span></td><td>object/string</td><td>爬取规则 allow 列表</td></tr><tr><td><code>concurrency</code><span class="req">必填</span></td><td>int</td><td>并发数，默认 4</td></tr><tr><td><code>download_delay</code><span class="req">必填</span></td><td>float</td><td>请求间隔秒，默认 0</td></tr><tr><td><code>autothrottle</code><span class="req">必填</span></td><td>bool</td><td>自动限速</td></tr><tr><td><code>robots_txt_obey</code><span class="req">必填</span></td><td>bool</td><td>遵守 robots.txt</td></tr><tr><td><code>adaptive</code><span class="req">必填</span></td><td>bool</td><td>自适应反爬</td></tr><tr><td><code>proxy_rotation</code><span class="req">必填</span></td><td>bool</td><td>轮换代理池</td></tr><tr><td><code>export_format</code><span class="req">必填</span></td><td>string</td><td>jsonl(默认)/csv/json/xml</td></tr></tbody></table><div class="codeblock"># 全站爬取（自动跟随站内链接）
+curl -X POST https://YOUR-SERVER:8080/api/tasks   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"type":"crawl","name":"抓我网站","start_urls":"https://example.com","fields":"标题:h1\n价格:.price","proxy_rotation":true,"export_format":"csv"}'
+
+# 抓 Shopify 商店产品
+curl -X POST https://YOUR-SERVER:8080/api/tasks   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"type":"shopify","target_website":"mystore.com"}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "task": {"id": "t260925143000abcd", "name": "...", "status": "created", ...},
+  "script_preview": "spider.py 前 2000 字符"}</div><div class="ep-note">创建后返回任务 ID（tid），用 start 启动。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}</span><span class="ep-desc">任务详情</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/tasks/t260925143000abcd</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/start</span><span class="ep-desc">启动任务（Docker 容器）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/tasks/t260925143000abcd/start -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/pause</span><span class="ep-desc">暂停运行中的任务（记录断点）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/resume</span><span class="ep-desc">恢复任务（从断点继续）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-del">DELETE</span><span class="ep-path">/api/tasks/{tid}</span><span class="ep-desc">删除任务（停止并清理容器与数据）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table><div class="codeblock">curl -X DELETE https://YOUR-SERVER:8080/api/tasks/t260925143000abcd -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}/log</span><span class="ep-desc">任务运行日志</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr><tr><td><code>tail</code><span class="req">必填</span></td><td>int</td><td>最近行数，默认 200</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}/export</span><span class="ep-desc">导出任务结果（CSV / JSON 下载）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr><tr><td><code>format</code><span class="req">必填</span></td><td>string</td><td>csv/json，默认按任务配置</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/tasks/t260925143000abcd/export?format=csv" -o result.csv</div></div>
+        <div class="guide-sec-title" id="api-sess">⑧ 会话（保持登录/连续访问）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/sessions</span><span class="ep-desc">当前打开的浏览器/请求会话列表</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/sessions</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/sessions/{sid}/close</span><span class="ep-desc">关闭一个会话</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>sid</code><span class="req">必填</span></td><td>string</td><td>会话 ID</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/sessions/会话ID/close -H "X-Api-Key: sk-你的APIKey"</div></div>
+        <div class="guide-sec-title" id="api-mcp-tools">MCP Server 工具清单（27 个）</div>
+        <div class="gs-card">
+          <h4><svg class="ic"><use href="#i-robot"/></svg> 接入信息</h4>
+          <div class="codeblock">URL:  <b style="color:var(--accent)">https://YOUR-SERVER:8080/mcp/</b>
+Auth: <b style="color:var(--gold)">Authorization: Bearer sk-你的APIKey</b>
+协议:  Streamable HTTP（先 initialize 握手，走 SSE）</div>
+          <div class="ep-note">连上后 AI Agent 可用自然语言直接调用整个控制台：抓网页 / 反爬 / 用代理访问注册页 / 查代理池 / 建爬虫任务 / 会话管理，每次调用扣额度。</div>
+        </div>
+        <table>
+          <thead><tr><th style="width:24%">工具</th><th>用途</th><th style="width:34%">关键参数</th></tr></thead>
+          <tbody>
+            <tr><td><code>console_status</code></td><td>控制台整体状态（MCP/代理池/任务数）</td><td>—</td></tr>
+            <tr><td><code>scrapling_tools</code></td><td>列出上游 Scrapling 全部抓取工具</td><td>—</td></tr>
+            <tr><td><code>scrapling_call</code></td><td>通用调用上游工具（fetch/stealthy_fetch/make_request…）</td><td>name, arguments(JSON)</td></tr>
+            <tr><td><code>page_markdown</code></td><td>网页转 LLM 就绪 Markdown</td><td>url, css_selector</td></tr>
+            <tr><td><code>site_markdown</code></td><td>整站爬成 Markdown 语料库</td><td>url, max_pages</td></tr>
+            <tr><td><code>capture_xhr</code></td><td>捕获页面背后所有 XHR/API 接口</td><td>url, timeout</td></tr>
+            <tr><td><code>selector_gen</code></td><td>验证/生成 CSS/XPath 选择器</td><td>url, css / xpath / text</td></tr>
+            <tr><td><code>extract_cli</code></td><td>CLI extract 等价：网页提取为 md/txt/html</td><td>url, format, mode, impersonate</td></tr>
+            <tr><td><code>proxy_list</code></td><td>查询代理池</td><td>q, source, limit, offset</td></tr>
+            <tr><td><code>proxy_check_alive</code></td><td>并发存活检测（异步）</td><td>limit</td></tr>
+            <tr><td><code>proxy_check_alive_status</code></td><td>存活检测进度/结果</td><td>—</td></tr>
+            <tr><td><code>proxy_alive_pool</code></td><td>存活代理池（自动优先使用）</td><td>limit</td></tr>
+            <tr><td><code>proxy_alive_remove</code></td><td>移除存活池单条代理</td><td>ip, port</td></tr>
+            <tr><td><code>proxy_alive_clear</code></td><td>清空存活代理池</td><td>—</td></tr>
+            <tr><td><code>proxy_visit</code></td><td>用代理 IP 访问网址（注册防风控核心）</td><td>url, mode, proxy, retries</td></tr>
+            <tr><td><code>proxy_records</code></td><td>最近代理访问记录</td><td>tail</td></tr>
+            <tr><td><code>proxy_check_target</code></td><td>目标站代理体检（筛注册可用池）</td><td>url, limit</td></tr>
+            <tr><td><code>proxy_check_target_status</code></td><td>目标体检进度</td><td>—</td></tr>
+            <tr><td><code>proxy_target_usable</code></td><td>某目标站可用代理池</td><td>url</td></tr>
+            <tr><td><code>tasks_list</code></td><td>爬虫任务列表</td><td>—</td></tr>
+            <tr><td><code>task_create</code></td><td>创建爬虫任务</td><td>type, start_urls, fields, proxy_rotation…</td></tr>
+            <tr><td><code>task_start</code></td><td>启动任务</td><td>tid</td></tr>
+            <tr><td><code>task_pause</code></td><td>暂停任务（记断点）</td><td>tid</td></tr>
+            <tr><td><code>task_resume</code></td><td>恢复任务</td><td>tid</td></tr>
+            <tr><td><code>task_log</code></td><td>任务运行日志</td><td>tid, lines</td></tr>
+            <tr><td><code>sessions_list</code></td><td>当前会话列表</td><td>—</td></tr>
+            <tr><td><code>session_close</code></td><td>关闭会话</td><td>sid</td></tr>
+          </tbody>
+        </table>
+        <div class="ep-note" style="margin-top:10px">以上 27 个 MCP 工具全部由平台托管，客户端配置见上方「MCP Server 接入」。REST 与 MCP 共用同一份 API Key 与额度池。</div>
+      </div>
+  <div class="foot">
+    <span>© 2026 Scrapling 云抓取平台 · 上游项目 Scrapling (D4Vinci) · 文档公开免费查看</span>
+    <a href="/">← 返回首页</a>
+  </div>
+</div>
+</body>
+</html>

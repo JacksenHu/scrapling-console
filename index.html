@@ -1,0 +1,2799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrapling 云抓取平台 - 现代网页的无痛抓取</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Scrapling Console — finesse-ui 重做
+   register=product · Set10 Graphite&Lime + REDTEAM 红队冲击
+   SPECTACLE=3 · DENSITY=7
+   ============================================================ */
+:root{
+  /* substrate — Graphite & Lime (dark) + redteam red */
+  --page:#0a0b09;   /* 近黑石墨，非纯黑 */
+  --bg:#141613;
+  --panel-2:#1b1e19;
+  --border:rgba(255,255,255,.07);
+  /* ink */
+  --ink-1:#eef1e9;
+  --ink-2:#b3b9ab;
+  --ink-3:#8a9184;
+  /* brand */
+  --accent:#B6E018;
+  --accent-2:#5FD3B2;
+  --accent-soft:rgba(182,224,24,.13);
+  --on-accent:#12140d;
+  --glow:rgba(182,224,24,.28);
+  /* semantic */
+  --up:#3FCB86;
+  --down:#FF4D3D;
+  --warn:#E8A33D;
+  /* redteam */
+  --red:#FF4D3D;
+  --red-soft:rgba(255,77,61,.12);
+  --teal:#5FD3B2;
+  /* elevation */
+  --shadow:0 1px 3px rgba(0,0,0,.35);
+  --shadow-lg:0 40px 90px -50px rgba(0,0,0,.75);
+  /* radius */
+  --r:18px; --r-sm:11px; --r-lg:28px;
+  /* type */
+  --font-ui:-apple-system,"Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+  --font-mono:"JetBrains Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  /* 旧版兼容别名（JS 模板引用） */
+  --danger:var(--red); --muted:var(--ink-3); --text:var(--ink-1);
+  --line:var(--border); --line2:rgba(255,255,255,.14);
+  --accent2:var(--accent-2); --gold:var(--warn);
+  --panel:var(--bg); --panel2:var(--panel-2); --card2:var(--bg);
+  --blue:var(--accent-2); --accent-ink:var(--on-accent);
+  --dim:#66705f; --bg2:#101210;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--page);color:var(--ink-2);
+  font-family:var(--font-ui);font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.hidden{display:none!important}
+a{color:var(--accent);text-decoration:none}
+.mono{font-family:var(--font-mono)}
+
+/* ---------- 图标 ---------- */
+.ic{width:20px;height:20px;flex:none;vertical-align:-4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:15px;height:15px;vertical-align:-2px}
+.ic.lg{width:24px;height:24px}
+button .ic,a .ic{pointer-events:none}
+/* 状态点 */
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none}
+.dot.g{background:var(--up);box-shadow:0 0 6px rgba(63,203,134,.8)}
+.dot.y{background:var(--warn);box-shadow:0 0 6px rgba(232,163,61,.7)}
+.dot.b{background:var(--accent-2);box-shadow:0 0 6px rgba(95,211,178,.7)}
+.dot.r{background:var(--red);box-shadow:0 0 6px rgba(255,77,61,.8)}
+
+/* ---------- 按钮 ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);color:var(--on-accent);
+  font-family:var(--font-ui);font-size:13px;font-weight:600;
+  border:1px solid transparent;cursor:pointer;line-height:1.2;
+  transition:transform .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out;
+  white-space:nowrap;
+}
+.btn:hover{filter:brightness(1.08);box-shadow:0 2px 10px rgba(182,224,24,.25)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+.btn.gray{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--border)}
+.btn.gray:hover{color:var(--ink-1);box-shadow:none;filter:brightness(1.15)}
+.btn.gold{background:var(--warn);color:#171005}
+.btn.gold:hover{box-shadow:0 2px 10px rgba(232,163,61,.3)}
+.btn.red{background:var(--red);color:#fff}
+.btn.red:hover{box-shadow:0 2px 10px rgba(255,77,61,.35)}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink-2)}
+.btn.ghost:hover{color:var(--ink-1);border-color:rgba(255,255,255,.18)}
+.btn.gray .ic,.btn.ghost .ic{color:var(--ink-1)}
+.btn.gray:hover .ic,.btn.ghost:hover .ic{color:var(--accent)}
+
+/* ---------- 输入 ---------- */
+input,select,textarea{
+  width:100%;padding:9px 12px;border-radius:var(--r-sm);
+  background:var(--bg);border:1px solid var(--border);color:var(--ink-1);
+  font-family:var(--font-ui);font-size:13px;outline:none;
+  transition:border-color .12s,box-shadow .12s;
+}
+input::placeholder,textarea::placeholder{color:var(--ink-3)}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+input[type="checkbox"],input[type="radio"]{width:auto;accent-color:var(--accent)}
+label{font-size:13px;color:var(--ink-2);font-weight:500}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238a9184' stroke-width='1.5' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+
+/* ---------- 卡片 ---------- */
+.card,.panel{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r);padding:20px;
+  box-shadow:var(--shadow);
+}
+.panel{margin-bottom:16px}
+
+/* ---------- KPI stat ---------- */
+.stat{display:flex;flex-direction:column;gap:2px;padding:16px 18px}
+.stat .k{font-size:11.5px;color:var(--ink-3);letter-spacing:.03em;display:flex;align-items:center;gap:8px}
+.stat .k .chip{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center}
+.stat .v{font-size:24px;font-weight:700;color:var(--ink-1);font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.2}
+.stat .v.gold{color:var(--warn)}
+.stat .v.red{color:var(--red)}
+.stat .v.green{color:var(--up)}
+.stat .v.blue{color:var(--accent-2)}
+.stat .sub{font-size:12px;color:var(--ink-3)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+
+/* ---------- 表格 ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11.5px;color:var(--ink-3);font-weight:600;letter-spacing:.02em;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--font-mono)}
+.trow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.trow:last-child{border-bottom:none}
+.trow .a{color:var(--ink-2)}
+.trow .c{color:var(--red);font-family:var(--font-mono)}
+.trow .t{color:var(--ink-3);font-size:12px;font-family:var(--font-mono)}
+
+/* ---------- 徽章 ---------- */
+.tag{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--border)}
+.tag.alive{color:var(--up);background:rgba(63,203,134,.10);border-color:rgba(63,203,134,.30)}
+.tag.dead{color:var(--red);background:var(--red-soft);border-color:rgba(255,77,61,.30)}
+.tag.src{color:var(--accent-2);background:rgba(95,211,178,.10);border-color:rgba(95,211,178,.30)}
+.tag.warn{color:var(--warn);background:rgba(232,163,61,.10);border-color:rgba(232,163,61,.30)}
+
+/* ---------- 布局外壳 ---------- */
+.top{display:flex;height:60px;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--border);background:rgba(20,22,19,.8);backdrop-filter:blur(8px);position:sticky;top:0;z-index:40}
+.brand{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--ink-1);letter-spacing:-.01em}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center}
+.brand .sub{font-size:11px;color:var(--ink-3);font-weight:400}
+.top .spacer{flex:1}
+.top-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.top-user .q{font-family:var(--font-mono);color:var(--accent);font-weight:600}
+
+.side{
+  width:232px;position:fixed;left:0;top:0;bottom:0;z-index:50;
+  background:var(--page);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:18px 14px;gap:2px;
+  overflow-y:auto;
+}
+.side .brand{padding:2px 10px 18px}
+.side .nav-group{font-size:10.5px;color:var(--ink-3);letter-spacing:.08em;padding:14px 10px 6px;font-weight:600}
+.nav-item{
+  display:flex;align-items:center;gap:11px;width:100%;
+  padding:9px 12px;border-radius:var(--r-sm);border:none;background:transparent;
+  color:var(--ink-2);font-family:var(--font-ui);font-size:13px;font-weight:500;
+  cursor:pointer;text-align:left;transition:background .12s,color .12s;
+}
+.nav-item:hover{background:rgba(255,255,255,.04);color:var(--ink-1)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-item.active .ic{color:var(--accent)}
+.nav-item .ic{color:var(--ink-1)}
+.nav-item:hover .ic{color:var(--accent)}
+.side .foot{margin-top:auto;padding-top:14px}
+.side-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);background:var(--panel-2);border:1px solid var(--border);font-size:12.5px;color:var(--ink-1)}
+.side-user .q{margin-left:auto;font-family:var(--font-mono);color:var(--accent);font-size:12px;font-weight:600}
+
+.page{margin-left:232px;min-height:100vh;display:flex;flex-direction:column}
+.p-top{display:flex;align-items:baseline;gap:14px;padding:22px 28px 0}
+#pageTitle{font-size:20px;font-weight:700;color:var(--ink-1);letter-spacing:-.01em}
+.p-top .crumb{font-size:12px;color:var(--ink-3)}
+.p-content{padding:16px 28px 48px}
+.ann{margin:0 28px 4px;padding:10px 14px;border-radius:var(--r-sm);background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.25);color:var(--warn);font-size:13px;display:flex;gap:10px;align-items:center}
+
+/* ---------- 分区面板 ---------- */
+.sec-head{display:flex;align-items:center;gap:10px;margin:6px 0 14px}
+.sec-head h3{font-size:16px;font-weight:650;color:var(--ink-1)}
+.sec-head .desc{font-size:12.5px;color:var(--ink-3)}
+.arg-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.arg-row label{width:130px;flex:none;text-align:right;font-size:12.5px;color:var(--ink-2)}
+.arg-row label em{color:var(--red);font-style:normal}
+.row-hint{font-size:12px;color:var(--ink-3);margin:-6px 0 12px 142px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}}
+
+/* ---------- 结果输出 ---------- */
+.res{margin-top:14px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border)}
+.res-head{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--panel-2);font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--border)}
+.res-body{max-height:420px;overflow:auto;padding:14px;background:var(--page);color:var(--ink-2);font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;word-break:break-all}
+.msg{font-size:12.5px;margin-top:8px;min-height:18px}
+.msg.ok{color:var(--up)}.msg.err{color:var(--red)}.msg.warn{color:var(--warn)}
+
+/* ---------- 代码块 ---------- */
+.codeblock{background:var(--page);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--ink-2);overflow:auto;white-space:pre-wrap}
+.codeblock b{color:var(--accent);font-weight:600}
+.codeblock .c{color:var(--ink-3)}
+.codeblock .r{color:var(--red)}
+.codeblock .g{color:var(--up)}
+.codeblock .y{color:var(--warn)}
+
+/* ---------- 概览页 ---------- */
+.ov-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+@media(max-width:1100px){.ov-grid{grid-template-columns:1fr}}
+.ov-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:16px}
+.ov-card:last-child{margin-bottom:0}
+.ov-card h3{font-size:14px;font-weight:600;color:var(--ink-1);margin:0 0 12px;display:flex;align-items:center;gap:8px;letter-spacing:.01em}
+.ov-card h3 .ic{color:var(--accent)}
+.ov-quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.ov-quick a{display:flex;flex-direction:column;gap:6px;padding:13px 15px;border-radius:var(--r-sm);background:var(--panel-2);border:1px solid var(--border);text-decoration:none;cursor:pointer;transition:border-color .12s,background .12s,transform .12s}
+.ov-quick a:hover{border-color:var(--accent);background:var(--accent-soft);transform:translateY(-1px)}
+.ov-quick .t{font-size:13px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;gap:8px}
+.ov-quick .t .ic{color:var(--accent)}
+.ov-quick .d{font-size:12px;color:var(--ink-3);line-height:1.45}
+.ov-card .stat .v{font-size:26px}
+.ov-card .stat .k{font-size:12px}
+.quick-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:4px}
+.quick-card{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border);box-shadow:var(--shadow)}
+.quick-card .ic{color:var(--accent)}
+.quick-card h4{font-size:14px;color:var(--ink-1);font-weight:600;display:flex;gap:8px;align-items:center}
+.quick-card p{font-size:12.5px;color:var(--ink-3)}
+.quick-card .btn{margin-top:auto;align-self:flex-start}
+.status-row{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.status-row .ok{color:var(--up);font-weight:600}
+.status-row .bad{color:var(--red);font-weight:600}
+
+/* ---------- 代理面板 ---------- */
+.panels{display:flex;flex-direction:column;gap:16px}
+.panel .p-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.panel .p-head h4{font-size:15px;font-weight:650;color:var(--ink-1);display:flex;gap:8px;align-items:center}
+.panel .p-head .ic{color:var(--accent)}
+.panel .p-head .spacer{flex:1}
+.pr-row{display:flex;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
+.pr-row .cell{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-row .cell.w160{flex:none;width:160px}
+.pr-row .cell.w120{flex:none;width:120px}
+.pr-row .cell.w90{flex:none;width:90px}
+
+/* ---------- 工具卡片 ---------- */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.tool-card{display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;transition:border-color .12s,transform .12s}
+.tool-card:hover{border-color:rgba(182,224,24,.4);transform:translateY(-1px)}
+.tool-card .t-name{font-size:13.5px;font-weight:600;color:var(--ink-1);font-family:var(--font-mono);display:flex;gap:8px;align-items:center}
+.tool-card .t-name .ic{color:var(--accent);width:17px;height:17px}
+.tool-card .t-desc{font-size:12px;color:var(--ink-3);line-height:1.5}
+
+/* ---------- 登录/注册 ---------- */
+#authPage{min-height:100vh}
+.auth-r{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;background:
+  radial-gradient(900px 500px at 15% -10%,rgba(255,77,61,.10),transparent 60%),
+  radial-gradient(700px 500px at 90% 110%,rgba(182,224,24,.07),transparent 60%),
+  var(--page)}
+.auth-box{width:100%;max-width:400px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:34px 32px;box-shadow:var(--shadow-lg)}
+.auth-box h2{font-size:22px;font-weight:700;color:var(--ink-1);letter-spacing:-.01em;margin-bottom:4px}
+.auth-box .sub{font-size:13px;color:var(--ink-3);margin-bottom:22px}
+.auth-box label{display:block;margin:14px 0 6px;font-size:12.5px;color:var(--ink-2)}
+.auth-box input{height:44px}
+.auth-box .btn{width:100%;height:44px;margin-top:20px;font-size:14px}
+.auth-err{display:none;background:var(--red-soft);border:1px solid rgba(255,77,61,.3);color:var(--red);font-size:12.5px;padding:9px 12px;border-radius:var(--r-sm);margin-top:14px}
+.switch{margin-top:16px;text-align:center;font-size:12.5px;color:var(--ink-3)}
+.switch a{color:var(--accent);cursor:pointer}
+.auth-tip{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-3);text-align:center}
+
+/* ---------- LANDING (红队冲击) ---------- */
+.landing{min-height:100vh;background:
+  linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px),
+  radial-gradient(1100px 600px at 75% -10%,rgba(255,77,61,.14),transparent 65%),
+  radial-gradient(900px 700px at 10% 110%,rgba(182,224,24,.06),transparent 60%),
+  var(--page);
+  background-size:44px 44px,44px 44px,auto,auto,auto;
+}
+.l-nav{display:flex;align-items:center;gap:24px;padding:20px 40px;max-width:1280px;margin:0 auto}
+.l-nav .brand{font-size:17px}
+.l-nav .spacer{flex:1}
+.l-nav a{font-size:13.5px;color:var(--ink-2);font-weight:500}
+.l-nav a:hover{color:var(--ink-1)}
+.l-hero{max-width:1280px;margin:0 auto;padding:76px 40px 56px;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+@media(max-width:1000px){.l-hero{grid-template-columns:1fr;padding-top:44px}}
+.l-hero .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:20px;border:1px solid rgba(255,77,61,.35);background:var(--red-soft);color:var(--red);font-size:11.5px;font-weight:700;letter-spacing:.14em;margin-bottom:20px}
+.l-hero h1{font-size:46px;line-height:1.08;font-weight:800;color:var(--ink-1);letter-spacing:-.025em;margin-bottom:20px;text-wrap:balance}
+.l-hero h1 .hl{color:var(--accent)}
+.l-hero h1 .hlr{color:var(--red)}
+.l-hero .lede{font-size:16px;color:var(--ink-2);max-width:520px;line-height:1.7;margin-bottom:30px}
+.l-hero .lede b{color:var(--ink-1)}
+.l-cta{display:flex;gap:12px;flex-wrap:wrap}
+.l-cta .btn{padding:13px 24px;font-size:14px}
+/* hero 终端（无 chrome，纯日志流）*/
+.term{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;font-family:var(--font-mono);font-size:12.5px;line-height:2;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
+.term::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 96%,rgba(182,224,24,.06) 100%);opacity:.5}
+.term .t-line{white-space:pre-wrap;word-break:break-all}
+.term .prompt{color:var(--red);font-weight:700}
+.term .cmd{color:var(--ink-1)}
+.term .out{color:var(--ink-2)}
+.term .ok{color:var(--up)}
+.term .hl{color:var(--accent)}
+.term .dim{color:var(--ink-3)}
+.term .caret{display:inline-block;width:8px;height:15px;background:var(--accent);vertical-align:-2px;animation:blink 1.1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.term-ip{color:var(--accent);font-weight:600}
+/* 指标条 */
+.l-metrics{max-width:1280px;margin:0 auto;padding:0 40px 64px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:800px){.l-metrics{grid-template-columns:1fr}}
+.l-metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow)}
+.l-metric .m-k{font-size:12px;color:var(--ink-3);letter-spacing:.04em;display:flex;gap:8px;align-items:center}
+.l-metric .m-k .ic{color:var(--accent);width:17px;height:17px}
+.l-metric .m-v{font-size:30px;font-weight:800;color:var(--ink-1);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+/* landing 区块 */
+.l-sec{max-width:1280px;margin:0 auto;padding:0 40px 80px}
+.l-sec h2{font-size:30px;font-weight:800;color:var(--ink-1);letter-spacing:-.02em;margin-bottom:10px;text-wrap:balance}
+.l-sec .l-sub{font-size:15px;color:var(--ink-3);max-width:640px;margin-bottom:34px;line-height:1.6}
+.l-sec .l-sub b{color:var(--ink-2)}
+/* 三能力卡（红队冲击） */
+.l-why{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.l-why{grid-template-columns:1fr}}
+.l-why .wc{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:24px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.l-why .wc::after{content:"";position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(255,77,61,.16),transparent 70%);pointer-events:none}
+.l-why .wc:nth-child(2)::after{background:radial-gradient(circle,rgba(182,224,24,.12),transparent 70%)}
+.l-why .wc:nth-child(3)::after{background:radial-gradient(circle,rgba(95,211,178,.12),transparent 70%)}
+.l-why .wc .chip{width:40px;height:40px;border-radius:11px;background:var(--red-soft);color:var(--red);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+.l-why .wc:nth-child(2) .chip{background:var(--accent-soft);color:var(--accent)}
+.l-why .wc:nth-child(3) .chip{background:rgba(95,211,178,.12);color:var(--accent-2)}
+.l-why .wc h3{font-size:16px;font-weight:700;color:var(--ink-1);margin-bottom:8px}
+.l-why .wc p{font-size:13.5px;color:var(--ink-3);line-height:1.65}
+.l-why .wc .wtag{margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--red);opacity:.8}
+.l-why .wc:nth-child(2) .wtag{color:var(--accent)}
+.l-why .wc:nth-child(3) .wtag{color:var(--accent-2)}
+/* 四步 */
+.l-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.l-steps{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.l-steps{grid-template-columns:1fr}}
+.l-step{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;box-shadow:var(--shadow)}
+.l-step .n{font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.06em;margin-bottom:10px}
+.l-step h4{font-size:14.5px;font-weight:650;color:var(--ink-1);margin-bottom:6px}
+.l-step p{font-size:12.5px;color:var(--ink-3);line-height:1.6}
+/* 高级能力 */
+.l-cap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.l-cap{grid-template-columns:1fr}}
+.l-cap .cc{display:flex;gap:16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.l-cap .cc .chip{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.l-cap .cc h4{font-size:14.5px;font-weight:650;color:var(--ink-1);margin-bottom:6px}
+.l-cap .cc p{font-size:12.5px;color:var(--ink-3);line-height:1.6}
+.l-foot{border-top:1px solid var(--border);padding:28px 40px;text-align:center;font-size:12.5px;color:var(--ink-3)}
+.l-foot b{color:var(--accent)}
+
+/* ---------- 动效 ---------- */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .55s cubic-bezier(.16,1,.3,1),transform .55s cubic-bezier(.16,1,.3,1)}
+.reveal.on{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.term .caret{animation:none}}
+
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- 兼容旧 section 样式 ---------- */
+#mcpStatus{color:var(--accent);font-weight:600}
+.sys-row{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3);margin-top:10px;font-family:var(--font-mono)}
+.sys-row b{color:var(--ink-1)}
+/* JS 模板引用的旧变量别名 */
+#app{background:var(--page)}
+.main{margin-left:232px;padding:0 28px 48px}
+.main-top{display:flex;align-items:center;gap:14px;padding:22px 28px 4px}
+.main-top h1{font-size:20px;font-weight:700;color:var(--ink-1);letter-spacing:-.01em}
+.quota-pill{margin-left:auto;font-size:12.5px;color:var(--ink-3);background:var(--panel-2);border:1px solid var(--border);padding:6px 14px;border-radius:20px}
+.quota-pill b{color:var(--accent);font-family:var(--font-mono)}
+.side-foot{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:var(--r-sm);background:var(--panel-2);border:1px solid var(--border);font-size:12.5px;color:var(--ink-2)}
+.side-foot .u{display:flex;align-items:center;gap:8px;color:var(--ink-1);font-weight:600}
+.side-foot .u .ic{color:var(--accent);width:16px;height:16px}
+.side-foot .q{font-family:var(--font-mono);color:var(--accent);font-weight:700}
+.side-foot .act{color:var(--accent);cursor:pointer;font-size:12px}
+.side-foot .act:hover{text-decoration:underline}
+.badge{background:var(--red-soft);color:var(--red);font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;margin-left:auto}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-size:15px;font-weight:650;color:var(--ink-1);margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;letter-spacing:-.01em}
+.card h2 small{color:var(--ink-3);font-weight:400;font-size:12px;margin-left:2px}
+.card h2 .ic{color:var(--accent)}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.hint{color:var(--ink-3);font-size:11.5px}
+.result{background:var(--page);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:420px;overflow:auto;margin-top:12px}
+.tools-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tool-chip{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;cursor:pointer;font-size:13px;color:var(--ink-2);font-family:var(--font-ui)}
+.tool-chip:hover{border-color:var(--accent);color:var(--ink-1)}
+.tool-chip.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.tool-desc{color:var(--ink-3);font-size:12px;margin:8px 0 12px}
+.ico,.f-ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:-3px}
+.ico .ic,.f-ico .ic{width:18px;height:18px}
+.codeblock .ic,.result .ic,.term .ic{width:15px;height:15px;vertical-align:-3px}
+/* 教程页 */
+.tg-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.tg-head{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:650;color:var(--ink-1);margin-bottom:14px}
+.tg-head .ic{color:var(--accent)}
+.tg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.tg-row{display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.tg-row:last-child{border-bottom:none}
+.tg-tag{font-family:var(--font-mono);font-size:11px;padding:2px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);flex:none}
+.tg-what{color:var(--ink-1);flex:1}
+.tg-how{color:var(--ink-3);flex:1.4;font-size:12.5px}
+.tg-tip{background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.25);color:var(--warn);font-size:12.5px;padding:10px 14px;border-radius:var(--r-sm);margin-top:12px}
+.tg-tip b{color:var(--ink-1)}
+.guide-sec-title{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em;margin:18px 0 10px}
+.guide-faq{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:10px}
+.guide-faq h4{font-size:13.5px;color:var(--ink-1);margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.guide-faq p{font-size:13px;color:var(--ink-2);line-height:1.7}
+/* 高级工具 / API / 定价 / 用量 */
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.adv-card{display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border);box-shadow:var(--shadow)}
+.adv-card h4{font-size:14px;color:var(--ink-1);font-weight:600;display:flex;gap:8px;align-items:center}
+.adv-card h4 .ic{color:var(--accent);width:18px;height:18px}
+.adv-card p{font-size:12.5px;color:var(--ink-3)}
+.adv-tag{font-size:10.5px;color:var(--accent-2);font-weight:600;letter-spacing:.05em}
+.api-keybox{background:var(--page);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;font-family:var(--font-mono);font-size:12.5px;color:var(--accent);word-break:break-all}
+.prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.price{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.price.hot{border-color:rgba(182,224,24,.45);box-shadow:0 0 0 1px rgba(182,224,24,.2),var(--shadow)}
+.price .p-name{font-size:14px;font-weight:650;color:var(--ink-1)}
+.price .p-desc{font-size:12px;color:var(--ink-3);min-height:34px}
+.price .p-quota{font-size:28px;font-weight:800;color:var(--ink-1);font-variant-numeric:tabular-nums}
+.price .p-quota small{font-size:13px;color:var(--ink-3);font-weight:400}
+.price .btn{margin-top:10px}
+.usage-list{display:flex;flex-direction:column;gap:2px}
+.usage-list .u{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.usage-list .u:last-child{border-bottom:none}
+.mini-table{font-size:12px}
+.pager{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.pager button{background:var(--panel-2);border:1px solid var(--border);color:var(--ink-2);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+.pager button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.faq{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:10px}
+.faq h4{font-size:13.5px;color:var(--ink-1);margin-bottom:6px}
+.faq p{font-size:13px;color:var(--ink-2);line-height:1.7}
+.cm{color:var(--ink-3)}
+.step-num{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.06em}
+/* 旧 hero/流程（若残留） */
+.step{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.metric,.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.caps,.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.cap,.feat{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:6px}
+.lead{font-size:16px;color:var(--ink-2);max-width:560px}
+.arrow{color:var(--accent)}
+/* spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+
+/* ---------- 移动端适配：控制台侧栏 → 抽屉 ---------- */
+.menu-btn{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg);color:var(--ink-1);cursor:pointer;flex:none;padding:0}
+.menu-btn:hover{border-color:var(--accent);color:var(--accent)}
+.drawer-mask{display:none}
+@media(max-width:900px){
+  .menu-btn{display:inline-flex}
+  .side{transform:translateX(-103%);transition:transform .24s cubic-bezier(.16,1,.3,1);box-shadow:0 0 0 rgba(0,0,0,0)}
+  body.drawer-open .side{transform:none;box-shadow:0 20px 60px -20px rgba(0,0,0,.55)}
+  .drawer-mask{display:block;position:fixed;inset:0;z-index:49;background:rgba(5,6,5,.52);opacity:0;pointer-events:none;transition:opacity .24s}
+  body.drawer-open .drawer-mask{opacity:1;pointer-events:auto}
+  .main{margin-left:0;padding:0 16px 40px}
+  .main-top{padding:14px 16px 2px;flex-wrap:wrap;gap:10px}
+  .main-top h1{font-size:18px}
+  .quota-pill{font-size:12px;padding:4px 10px}
+  .card{padding:16px}
+  .card h2 small{display:block;margin-top:2px}
+  .toolbar input[type=text]{min-width:0 !important;width:100%}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #app .card{overflow-x:auto}
+  #app table{min-width:560px}
+  .auth-r{padding:20px 14px}
+  .auth-box{width:100%;max-width:420px;padding:22px 18px}
+}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <defs>
+    <symbol id="i-spider" viewBox="0 0 24 24">
+      <path d="M12 13c-2.6-1.6-5.2-1.2-7.2-3.8M12 13c2.6-1.6 5.2-1.2 7.2-3.8M12 13c-2.6 1.6-5.2 1.2-7.2 3.8M12 13c2.6 1.6 5.2 1.2 7.2 3.8"/>
+      <circle cx="12" cy="13.5" r="3.6"/><circle cx="12" cy="9.2" r="2.3"/>
+      <circle cx="11.1" cy="8.8" r=".45" fill="currentColor" stroke="none"/>
+      <circle cx="12.9" cy="8.8" r=".45" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6.5H9V21H4a1 1 0 0 1-1-1v-9.5z"/>
+    </symbol>
+    <symbol id="i-tools" viewBox="0 0 24 24">
+      <path d="M14.7 6.3a4.8 4.8 0 0 0-6.6 6.4L3 17.8 6.2 21l5.1-5.1a4.8 4.8 0 0 0 6.4-6.6l-3.1 3.1-2.2-2.2 3.1-3.1z"/>
+      <path d="M19 5l2-2" opacity=".0"/>
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+      <path d="M13 2L4.5 13H11l-1 9 8.5-11H12l1-9z"/>
+    </symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18z"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/>
+      <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>
+    </symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24">
+      <path d="M9 2v5M15 2v5M4 7h16v3a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4V7zM12 14v7"/>
+    </symbol>
+    <symbol id="i-card" viewBox="0 0 24 24">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15.5h4"/>
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24">
+      <path d="M3 3v18h18"/><path d="M8 16v-5M12.5 16V8M17 16v-8"/>
+    </symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3.2"/>
+      <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>
+    </symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24">
+      <path d="M3 11.5l18-7v14l-18-7zM7 15.5v4a2 2 0 0 0 4 0v-1.6"/>
+    </symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 7.5l9.5 6 9.5-6"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14"/>
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24">
+      <path d="M20.5 12a8.5 8.5 0 1 1-2.5-6.1"/>
+      <path d="M20.5 2.5V6H17"/>
+    </symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7 8h10M7 12h10M7 16h6"/>
+    </symbol>
+    <symbol id="i-target" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="M12 3L2.5 20h19L12 3z"/><path d="M12 10v4.5M12 17.5h.01"/>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="4.5" y="11" width="15" height="9.5" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/>
+    </symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24">
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.4L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5z"/>
+    </symbol>
+    <symbol id="i-coins" viewBox="0 0 24 24">
+      <circle cx="12" cy="8.5" r="6.5"/><path d="M5.5 12.5v3a6.5 6.5 0 0 0 13 0v-3M5.5 15.5v3a6.5 6.5 0 0 0 13 0v-3"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 2l8 3v6c0 5-3.4 8.4-8 11-4.6-2.6-8-6-8-11V5l8-3z"/>
+    </symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24">
+      <rect x="7" y="7" width="10" height="10" rx="2"/><path d="M12 2.5V7M12 17v4.5M2.5 12H7M17 12h4.5"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M5 3h10l4 4v14H5V3zM15 3v4h4"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h4l2.2 2.5H20A2.5 2.5 0 0 1 22.5 9v8.5A2.5 2.5 0 0 1 20 20H5.5A2.5 2.5 0 0 1 3 17.5v-11z"/>
+    </symbol>
+    <symbol id="i-antenna" viewBox="0 0 24 24">
+      <path d="M12 2.5V21M5 8a10 10 0 0 0 14 0M8 11a6 6 0 0 0 8 0M12 21v-3"/>
+    </symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24">
+      <path d="M12 2c3 1.5 5.5 5 5.5 9.5L15 15.5V21l-3-1.5L9 21v-5.5L6.5 11.5C6.5 7 9 3.5 12 2z"/>
+      <circle cx="12" cy="9" r="2"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="7"/><path d="M21 21l-5.2-5.2"/>
+    </symbol>
+    <symbol id="i-robot" viewBox="0 0 24 24">
+      <rect x="4.5" y="8" width="15" height="10" rx="2.5"/><circle cx="9.5" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.1" fill="currentColor" stroke="none"/><path d="M12 8V5M12 5h3M12 18v2"/>
+    </symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24">
+      <path d="M7 11V5.5a1.5 1.5 0 0 1 3 0V11M10 11V4a1.5 1.5 0 0 1 3 0v7M13 11V5.5a1.5 1.5 0 0 1 3 0V11M16 11V8a1.5 1.5 0 0 1 3 0v6.5A6.5 6.5 0 0 1 12.5 21H12a8 8 0 0 1-6-2.8L4 15.3a1.6 1.6 0 0 1 2.4-2L7 14.5"/>
+    </symbol>
+    <symbol id="i-map" viewBox="0 0 24 24">
+      <path d="M9 3.5L3 6v14l6-2.5 6 2.5 6-2.5V3.5l-6 2.5-6-2.5zM9 3.5v14M15 6v14"/>
+    </symbol>
+    <symbol id="i-door" viewBox="0 0 24 24">
+      <path d="M4 21h16M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21M15 21V9l-3-3H9v15"/>
+    </symbol>
+    <symbol id="i-key" viewBox="0 0 24 24">
+      <circle cx="7.5" cy="15.5" r="4.5"/><path d="M11 12L20.5 2.5M16 7.5l3 3M13.5 10l2 2"/>
+    </symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24">
+      <path d="M8.6 14.5a6.3 6.3 0 1 1 6.8 0c-1 .9-1.6 2.1-1.6 3.3H10.2c0-1.2-.6-2.4-1.6-3.3zM9.5 21h5M10.5 18h3"/>
+    </symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24">
+      <rect x="2.5" y="6.5" width="19" height="13" rx="2.5"/><circle cx="12" cy="12.8" r="3.6"/><path d="M17 6.5l-2-3H9l-2 3"/>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-6.5 8-6.5s8 2.3 8 6.5"/>
+    </symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24">
+      <path d="M14.6 6.4a4.6 4.6 0 0 0-6.2 6.1L3 18l3 3 5.5-5.4a4.6 4.6 0 0 0 6.1-6.2l-3 3-2.3-2.3 3-3z"/>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24">
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24">
+      <path d="M9 3.5h3v3a1.5 1.5 0 0 0 3 0V3.5h3a1 1 0 0 1 1 1V8h-3a1.5 1.5 0 0 0 0 3h3v7a1 1 0 0 1-1 1h-3v-2.5a1.5 1.5 0 0 0-3 0V19H5a1 1 0 0 1-1-1v-4.5h3a1.5 1.5 0 0 0 0-3H4v-6a1 1 0 0 1 1-1h4z"/>
+    </symbol>
+    <symbol id="i-help" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.9 2.2c-.8.6-1.4 1.1-1.4 2.1M12 17h.01"/>
+    </symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24">
+      <path d="M3 4h2.2l2.4 12.5a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 8H6.5"/><circle cx="9.5" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/>
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 24 24">
+      <circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20.5c0-3.6 2.9-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 5.5a3.5 3.5 0 0 1 0 6.8M17.5 15.3c2.3.7 4 2.3 4 5.2"/>
+    </symbol>
+    <symbol id="i-box" viewBox="0 0 24 24">
+      <path d="M3 8l3-4h12l3 4M3 8v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8M3 8h18"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="M4.5 12.5l5 5L19.5 6.5"/>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24">
+      <path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/>
+    </symbol>
+    <symbol id="i-log" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7 8h10M7 12h10M7 16h6"/>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24">
+      <path d="M7 4.5l13 7.5-13 7.5v-15z"/>
+    </symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24">
+      <path d="M8 4.5h3v15H8zM13 4.5h3v15h-3z"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 3.5V15M6.5 10.5L12 16l5.5-5.5M4.5 20h15"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13.5h9L17.5 7M10 11v6M14 11v6"/>
+    </symbol>
+    <symbol id="i-send" viewBox="0 0 24 24">
+      <path d="M21.5 2.5L11 13M21.5 2.5l-7 18.5-3.7-7.8L3 9.5l18.5-7z"/>
+    </symbol>
+    <symbol id="i-external" viewBox="0 0 24 24">
+      <path d="M14 3.5h6.5V10M20.5 3.5L10.5 13.5M16.5 13.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1h6.5"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+      <path d="M4 6.5h16M4 12h16M4 17.5h16"/>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M4 12h15M14 6.5L19.5 12 14 17.5"/>
+    </symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24">
+      <rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M6.5 9.5l3 2.5-3 2.5M11.5 15h5"/>
+    </symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24">
+      <path d="M12 2l8 3v6c0 5-3.4 8.4-8 11-4.6-2.6-8-6-8-11V5l8-3z"/><path d="M9 12l2.2 2.2L15.5 9.5"/>
+    </symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24">
+      <rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>
+    </symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24">
+      <path d="M12 2.5l9 4.8-9 4.8-9-4.8 9-4.8z"/><path d="M3 12.5l9 4.8 9-4.8M3 17l9 4.8 9-4.8" opacity=".55"/>
+    </symbol>
+    <symbol id="i-database" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>
+    </symbol>
+  </defs>
+</svg>
+
+
+
+<!-- ================= Landing 首页 ================= -->
+<div id="landing">
+  <div class="l-nav">
+    <div class="brand"><span class="mark"><svg class="ic lg"><use href="#i-spider"/></svg></span> Scrapling<span class="sub">云抓取控制台</span></div>
+    <div class="spacer"></div>
+    <a id="lNavDocs" onclick="window.open('/api-docs','_blank')">API 文档</a>
+    <a id="lNavLogin" onclick="showAuth()">登录</a>
+    <button class="btn" id="lNavCta" onclick="showAuth()">免费开始</button>
+  </div>
+
+  <div class="l-hero">
+    <div>
+      <div class="eyebrow"><svg class="ic sm" style="width:13px;height:13px"><use href="#i-shield-check"/></svg> REDTEAM · WHITEHAT · CRAWLER</div>
+      <h1>把任何网站<br>变成<span class="hlr">你的数据源</span></h1>
+      <p class="lede">红队级网页抓取引擎：<b>反爬绕过、代理池轮换、全站爬取、AI 自动化</b>一条龙。不写代码，也能把整个网站变成你的数据。</p>
+      <div class="l-cta">
+        <button class="btn" id="lHeroCta" onclick="showAuth()"><svg class="ic"><use href="#i-rocket"/></svg> 免费开始抓取</button>
+        <button class="btn ghost" id="lHeroDocs" onclick="window.open('/api-docs','_blank')"><svg class="ic"><use href="#i-book"/></svg> API 文档</button>
+        <button class="btn ghost" id="lHeroGhost" onclick="showAuth()">查看控制台</button>
+      </div>
+    </div>
+    <div class="term reveal">
+      <div class="t-line"><span class="prompt">scrapling@redteam:~$</span> <span class="cmd">fetch --url https://target.com --stealth</span></div>
+      <div class="t-line"><span class="out">[<span class="hl">0x00</span>] session opened · stealth mode <span class="ok">ON</span></span></div>
+      <div class="t-line"><span class="out">[<span class="hl">0x01</span>] rotating proxy pool · exit ip <span class="term-ip" id="termIp">YOUR-SERVER</span></span></div>
+      <div class="t-line"><span class="out">[<span class="hl">0x02</span>] challenge detected <span class="dim">(cloudflare)</span> → adaptive bypass <span class="ok">passed</span></span></div>
+      <div class="t-line"><span class="out">[<span class="hl">0x03</span>] extracting 27 fields · title <span class="ok"><svg class="ic"><use href="#i-check"/></svg></span> price <span class="ok"><svg class="ic"><use href="#i-check"/></svg></span> images <span class="ok"><svg class="ic"><use href="#i-check"/></svg></span></span></div>
+      <div class="t-line"><span class="out">[<span class="hl">0x04</span>] <span class="dim">markdown</span> 82.4 KB · <span class="dim">xhr</span> 14 captured · done in <span class="hl">3.2s</span></span></div>
+      <div class="t-line"><span class="prompt">scrapling@redteam:~$</span> <span class="caret"></span></div>
+    </div>
+  </div>
+
+  <div class="l-metrics">
+    <div class="l-metric reveal">
+      <div class="m-k"><svg class="ic"><use href="#i-globe"/></svg> 代理池储备</div>
+      <div class="m-v" id="mProxies">—</div>
+    </div>
+    <div class="l-metric reveal">
+      <div class="m-k"><svg class="ic"><use href="#i-shield-check"/></svg> 存活出口</div>
+      <div class="m-v green" id="mAlive">—</div>
+    </div>
+    <div class="l-metric reveal">
+      <div class="m-k"><svg class="ic"><use href="#i-tools"/></svg> MCP 工具</div>
+      <div class="m-v" id="mTools">—</div>
+    </div>
+  </div>
+
+  <div class="l-sec">
+    <h2 class="reveal">三个身份，<span class="hlr">一种武器</span></h2>
+    <p class="l-sub reveal">红队视角的绕过能力、白帽视角的合规克制、爬虫视角的工程效率——同一套引擎，三种打开方式。</p>
+    <div class="l-why">
+      <div class="wc reveal">
+        <div class="chip"><svg class="ic lg"><use href="#i-shield"/></svg></div>
+        <div class="wtag">RED TEAM</div>
+        <h3>反爬绕过</h3>
+        <p>隐形抓取、验证码与盾牌自适应绕过、指纹伪装——像人一样访问，比人快百倍。</p>
+      </div>
+      <div class="wc reveal">
+        <div class="chip"><svg class="ic lg"><use href="#i-lock"/></svg></div>
+        <div class="wtag">WHITE HAT</div>
+        <h3>合规克制</h3>
+        <p>robots.txt 开关、自动限速、会话隔离——尊重来源站规则，抓得动、不惹祸。</p>
+      </div>
+      <div class="wc reveal">
+        <div class="chip"><svg class="ic lg"><use href="#i-spider"/></svg></div>
+        <div class="wtag">CRAWLER</div>
+        <h3>全站爬取</h3>
+        <p>链接跟随、Sitemap、Shopify、RSS/XML/CSV——一个 URL 出发，后台跑完整站。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="l-sec">
+    <h2 class="reveal">四步上手</h2>
+    <p class="l-sub reveal">从粘贴网址到拿到数据，全程不写代码。</p>
+    <div class="l-steps">
+      <div class="l-step reveal"><div class="n">STEP 01</div><h4>粘贴 URL</h4><p>任何网页地址，一行即可。</p></div>
+      <div class="l-step reveal"><div class="n">STEP 02</div><h4>选抓取模式</h4><p>普通 / 反爬 / 会话，多难都能开。</p></div>
+      <div class="l-step reveal"><div class="n">STEP 03</div><h4>一键执行</h4><p>代理轮换 + 隐形抓取自动完成。</p></div>
+      <div class="l-step reveal"><div class="n">STEP 04</div><h4>拿数据</h4><p>JSON / Markdown / 截图即出，或转后台任务。</p></div>
+    </div>
+  </div>
+
+  <div class="l-sec">
+    <h2 class="reveal">不止抓取：<span class="hl">自动化武器库</span></h2>
+    <p class="l-sub reveal">从单页抓取到 AI 代理协作，27 个工具覆盖完整链路。</p>
+    <div class="l-cap">
+      <div class="cc reveal"><div class="chip"><svg class="ic"><use href="#i-terminal"/></svg></div><div><h4>MCP 工具台</h4><p>27 个抓取工具，直接接入 Claude / Cursor / 任意 AI Agent。</p></div></div>
+      <div class="cc reveal"><div class="chip"><svg class="ic"><use href="#i-globe"/></svg></div><div><h4>代理池轮换</h4><p>数千代理储备，存活检测自动入库，每请求换出口。</p></div></div>
+      <div class="cc reveal"><div class="chip"><svg class="ic"><use href="#i-spider"/></svg></div><div><h4>全站爬虫</h4><p>后台任务：跟随链接、断点续爬、多种格式导出。</p></div></div>
+      <div class="cc reveal"><div class="chip"><svg class="ic"><use href="#i-plug"/></svg></div><div><h4>REST API</h4><p>API Key 一行接入你的程序，抓取能力随手调用。</p></div></div>
+      <div class="cc reveal"><div class="chip"><svg class="ic"><use href="#i-bolt"/></svg></div><div><h4>高级工具</h4><p>Markdown 转换、XHR 捕获、选择器生成、站点提取。</p></div></div>
+      <div class="cc reveal"><div class="chip"><svg class="ic"><use href="#i-database"/></svg></div><div><h4>额度即付即用</h4><p>注册送免费额度，用多少扣多少，不浪费。</p></div></div>
+    </div>
+  </div>
+
+  <div class="l-sec" style="text-align:center">
+    <h2 class="reveal">现在就开抓</h2>
+    <p class="l-sub reveal" style="margin:0 auto 26px">免费注册，30 秒内开始你的第一个抓取任务。</p>
+    <button class="btn reveal" id="lCtaBtn" style="font-size:15px;padding:14px 30px" onclick="showAuth()"><svg class="ic"><use href="#i-rocket"/></svg> 免费开始</button>
+  </div>
+
+  <div class="l-foot">Scrapling Console · 基于 <b>Scrapling</b> 开源引擎构建 · 2026</div>
+</div>
+
+<div id="authPage" class="hidden">
+  <div class="auth-r">
+    <div class="auth-box">
+      <div class="brand" style="margin-bottom:22px"><span class="mark"><svg class="ic lg"><use href="#i-spider"/></svg></span> Scrapling</div>
+      <h2 id="authTitle">登录</h2>
+      <div class="sub" id="authSub">欢迎回来，继续你的抓取任务</div>
+      <label>邮箱</label>
+      <input type="email" id="authUser" placeholder="你的邮箱" autocomplete="email">
+      <label>密码</label>
+      <input type="password" id="authPass" placeholder="密码（至少 6 位）" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()">
+      <div class="auth-err" id="authErr"></div>
+      <button class="btn" onclick="doAuth()" id="authBtn">登录</button>
+      <div class="switch" id="authSwitch">还没有账号？<a onclick="toggleAuth()">免费注册</a></div>
+      <div class="auth-tip" id="authTip">注册即送 <b id="authTrial">20</b> 次免费额度；用完可在控制台购买或联系客服充值。</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================= 控制台 ================= -->
+<div id="app" class="hidden">
+  <aside class="side">
+    <div class="brand"><span class="dot"><svg class="ic"><use href="#i-spider"/></svg></span> Scrapling<small style="color:var(--dim);font-size:11px;margin-left:auto">控制台</small></div>
+    <nav>
+      <button class="nav-item active" id="navOverview" onclick="switchTab('overview')"><span><svg class="ic"><use href="#i-home"/></svg></span> 概览</button>
+      <button class="nav-item" id="navTools" onclick="switchTab('tools')"><span><svg class="ic"><use href="#i-tools"/></svg></span> 抓取工具</button>
+      <button class="nav-item" id="navAdvanced" onclick="switchTab('advanced')"><span><svg class="ic"><use href="#i-bolt"/></svg></span> 高级工具</button>
+      <button class="nav-item" id="navProxy" onclick="switchTab('proxy')"><span><svg class="ic"><use href="#i-globe"/></svg></span> 代理池 / 访问</button>
+      <button class="nav-item" id="navTasks" onclick="switchTab('tasks')"><span><svg class="ic"><use href="#i-spider"/></svg></span> 爬虫任务</button>
+      <button class="nav-item" id="navGuide" onclick="switchTab('guide')"><span><svg class="ic"><use href="#i-book"/></svg></span> 教程</button>
+      <button class="nav-item" id="navApi" onclick="switchTab('api')"><span><svg class="ic"><use href="#i-plug"/></svg></span> API 接入</button>
+      <button class="nav-item" id="navQuota" onclick="switchTab('quota')"><span><svg class="ic"><use href="#i-card"/></svg></span> 额度与购买</button>
+      <button class="nav-item" id="navStatus" onclick="switchTab('status')"><span><svg class="ic"><use href="#i-chart"/></svg></span> 服务状态</button>
+      <button class="nav-item hidden" id="navAdmin" onclick="switchTab('admin')"><span><svg class="ic"><use href="#i-settings"/></svg></span> 管理后台<span class="badge">管理员</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="u"><span><svg class="ic"><use href="#i-user"/></svg></span> <span id="sideUser">—</span></div>
+      <div>剩余额度：<span class="q" id="sideQuota">—</span> 次</div>
+      <a class="act" onclick="goQuota()">购买额度</a> ·
+      <a class="act" onclick="logout()">退出登录</a> ·
+      <a class="act" onclick="showLanding()">返回首页</a>
+    </div>
+  </aside>
+  <div class="drawer-mask" id="drawerMask" onclick="closeDrawer()"></div>
+  <div class="main">
+    <div class="main-top">
+      <button class="menu-btn" id="menuBtn" onclick="toggleDrawer()" aria-label="打开菜单"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <h1 id="pageTitle">概览</h1>
+      <div class="quota-pill">余额 <b id="topQuota">—</b> 次 · <span id="topUser">—</span></div>
+    </div>
+    <div class="ann hidden" id="annBar"></div>
+  <section id="sec-tools">
+    <!-- 快捷任务：填 URL 即可 -->
+    <div class="card">
+      <h2>快捷任务<small>填 URL 就能抓，参数自动填好</small></h2>
+      <div class="toolbar" style="flex-wrap:wrap">
+        <input type="text" id="quickUrl" placeholder="输入网址，如 https://example.com" style="min-width:320px">
+        <select id="quickMode" onchange="quickModeChanged()">
+          <option value="simple">普通抓取（浏览器渲染，适合大部分网站）</option>
+          <option value="stealthy">反爬抓取（隐身模式，适合 Cloudflare 等高防护）</option>
+          <option value="extract">提取元素（需填 CSS 选择器）</option>
+          <option value="screenshot">网页截图（自动开会话→截图→关闭）</option>
+          <option value="make_request">纯 HTTP 请求（最快，适合 API）</option>
+          <option value="bulk">批量抓取（多个 URL，逗号/换行分隔）</option>
+          <option value="links">提取链接（全站链接，LinkExtractor）</option>
+        </select>
+      </div>
+      <div class="toolbar" id="quickExtra" style="flex-wrap:wrap">
+        <span style="color:var(--muted);font-size:12px">增强:</span>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="quickAdaptive"> 自适应选择器</label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="quickProxy"> 轮换代理池</label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="quickCache"> 开发模式缓存</label>
+        <input type="text" id="quickCss" placeholder="CSS 选择器（提取元素时用），如 .product h2" style="min-width:280px;display:none">
+        <textarea id="quickUrls" placeholder="每行一个 URL，批量抓取时用" style="flex:1;min-height:60px;display:none"></textarea>
+        <select id="quickMethod" style="display:none">
+          <option value="GET">GET</option><option value="POST">POST</option>
+          <option value="PUT">PUT</option><option value="DELETE">DELETE</option>
+        </select>
+      </div>
+      <button class="btn" onclick="quickRun()" id="quickBtn"><svg class="ic"><use href="#i-rocket"/></svg> 一键抓取</button>
+      <div class="msg" id="quickMsg"></div>
+      <div class="result hidden" id="quickResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>选择工具<small>高级模式：手动选工具，参数已自动填充默认值</small></h2>
+      <p style="color:var(--muted);font-size:12.5px;margin:6px 0 0">这里是 <b style="color:var(--ink-2)">Scrapling 原生抓取工具</b>（容器直连执行）；控制台全量 <b style="color:var(--accent)">27 个 MCP 工具</b>（代理池 / 代理访问 / 体检 / 爬虫任务 / 会话管理）请到「API 接入」页接入 AI Agent 使用。</p>
+      <div class="tools-list" id="toolList"><span style="color:var(--muted)">加载中...</span></div>
+      <div class="tool-desc" id="toolDesc"></div>
+      <div id="toolForm"></div>
+      <button class="btn" id="callBtn" onclick="callTool()">调用工具</button>
+      <div class="result hidden" id="toolResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>浏览器会话<small>查看 / 关闭已打开的会话（截图、动态抓取会产生会话）</small></h2>
+      <div id="sessionList"><span style="color:var(--muted)">加载中...</span></div>
+      <div class="msg" id="sessionMsg"></div>
+    </div>
+  </section>
+
+  <!-- 代理池 -->
+  <section id="sec-proxy" class="hidden">
+
+    <!-- 用代理打开网址 -->
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-globe"/></svg> 用代理打开网址<small>用代理池的 IP 访问目标网站（如注册页），换出口 IP 不怕风控；不填指定代理时自动优先用「该站可用池」</small></h2>
+      <div class="toolbar" style="flex-wrap:wrap">
+        <input type="text" id="pvUrl" placeholder="输入目标网址，如 https://example.com/register" style="min-width:320px" onkeydown="if(event.key==='Enter')proxyVisit()">
+        <select id="pvMode">
+          <option value="browser">浏览器渲染（隐身，推荐注册页）</option>
+          <option value="screenshot">网页截图（看代理打开后的样子）</option>
+          <option value="plain">普通请求（最快）</option>
+        </select>
+        <input type="text" id="pvProxy" placeholder="指定代理(可选) 如 1.2.3.4:8080" style="min-width:200px">
+        <select id="pvRetries" title="失败自动换代理重试次数">
+          <option value="1">失败换 1 个 IP 重试</option>
+          <option value="2" selected>失败换 2 个 IP 重试</option>
+          <option value="3">失败换 3 个 IP 重试</option>
+        </select>
+        <button class="btn" onclick="proxyVisit()" id="pvBtn"><svg class="ic"><use href="#i-rocket"/></svg> 用代理访问</button>
+        <button class="btn gray" onclick="proxyVisit(true)" id="pvRetryBtn" title="换一个新的代理 IP 重新访问"><svg class="ic"><use href="#i-refresh"/></svg> 换 IP 重试</button>
+      </div>
+      <div class="msg" id="pvMsg"></div>
+      <div id="pvResult" class="hidden" style="margin-top:10px">
+        <div class="status-row" id="pvMeta"></div>
+        <div id="pvBody" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- 目标站代理体检 -->
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-target"/></svg> 目标站代理体检<small>让代理池挨个访问你的目标网址，筛出"能打开这个站"的代理（注册专用池）</small></h2>
+      <div class="toolbar" style="flex-wrap:wrap">
+        <input type="text" id="ctUrl" placeholder="要注册/访问的目标网址" style="min-width:320px" onkeydown="if(event.key==='Enter')startTargetCheck()">
+        <select id="ctLimit">
+          <option value="50">测 50 条</option>
+          <option value="100" selected>测 100 条</option>
+          <option value="200">测 200 条</option>
+          <option value="300">测 300 条</option>
+        </select>
+        <button class="btn green" onclick="startTargetCheck()" id="ctBtn"><svg class="ic"><use href="#i-search"/></svg> 开始体检</button>
+        <button class="btn gray" onclick="loadTargetUsable()">查看已存可用池</button>
+      </div>
+      <div class="msg" id="ctMsg"></div>
+      <div id="ctResult" class="hidden" style="margin-top:10px">
+        <div class="status-row" id="ctMeta"></div>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table>
+            <thead><tr><th>代理 IP</th><th>端口</th><th>协议</th><th>状态码</th><th>结果</th><th>延迟</th><th></th></tr></thead>
+            <tbody id="ctBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 存活代理池 -->
+    <div class="card">
+      <h2><span class="dot g"></span> 存活代理池<small>存活检测通过的代理自动入库；不填指定代理访问时，优先用：该站可用池 → 存活池 → 全池</small>
+        <button class="btn gray" style="float:right" onclick="clearAlive()" id="aliveClearBtn">清空存活池</button>
+        <button class="btn green" style="float:right;margin-right:8px" onclick="checkAlive()" id="aliveCheckBtn"><svg class="ic"><use href="#i-refresh"/></svg> 重新检测</button>
+      </h2>
+      <div class="msg" id="aliveMsg"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>代理 IP</th><th>端口</th><th>协议</th><th>延迟</th><th>出口 IP</th><th>检测时间</th><th>操作</th></tr></thead>
+          <tbody id="aliveBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 访问记录 -->
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-file-text"/></svg> 代理访问记录<small>最近用代理访问过哪些网址</small>
+        <button class="btn gray" style="float:right" onclick="clearRecords()">清空记录</button>
+      </h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>时间</th><th>网址</th><th>模式</th><th>代理</th><th>出口 IP</th><th>状态</th><th>耗时</th></tr></thead>
+          <tbody id="pvRecords"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>代理池 <small id="proxyTotal"></small></h2>
+      <div class="toolbar">
+        <input type="text" id="proxySearch" placeholder="搜索 IP / 端口 / 协议..." onkeydown="if(event.key==='Enter')loadProxies(0)">
+        <select id="proxySource" onchange="loadProxies(0)"><option value="">全部来源</option></select>
+        <button class="btn gray" onclick="loadProxies(0)">搜索</button>
+        <button class="btn green" onclick="checkAlive()" id="checkBtn">存活检测</button>
+        <button class="btn gray" onclick="refreshProxies()">重新爬取</button>
+        <button class="btn gray" onclick="window.open('/download/csv','_blank')">下载 CSV</button>
+        <button class="btn gray" onclick="window.open('/download/json','_blank')">下载 JSON</button>
+      </div>
+      <div class="msg" id="proxyMsg"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>IP</th><th>端口</th><th>协议</th><th>来源</th><th>状态</th><th>延迟</th></tr></thead>
+          <tbody id="proxyBody"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button onclick="loadProxies(cur-1)" id="prevBtn">上一页</button>
+        <span id="pageInfo"></span>
+        <button onclick="loadProxies(cur+1)" id="nextBtn">下一页</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 爬虫任务 -->
+  <section id="sec-tasks" class="hidden">
+    <div class="card">
+      <h2>创建爬虫任务<small>Scrapling Spider 全站爬取，后台运行，可暂停/恢复/导出</small></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px">
+        <div class="arg-row"><label>任务名称</label><input id="taskName" placeholder="如：产品价格监控"></div>
+        <div class="arg-row"><label>任务类型 <em>*</em></label>
+          <select id="taskType" onchange="taskTypeChanged()">
+            <option value="crawl">全站爬取（跟随链接）</option>
+            <option value="single">单页/指定页提取</option>
+            <option value="sitemap">站点地图（Sitemap）</option>
+            <option value="xml">XML / RSS Feed</option>
+            <option value="csv">CSV Feed</option>
+            <option value="shopify">Shopify 商店产品</option>
+          </select>
+        </div>
+      </div>
+      <div class="arg-row"><label>起始 URL <em>*</em></label>
+        <textarea id="taskUrls" placeholder="每行一个 URL&#10;全站爬取：填首页即可自动跟随站内链接&#10;Shopify：填商店域名或首页 URL"></textarea></div>
+      <div class="arg-row" id="rowShopify" style="display:none"><label>商店域名</label>
+        <input id="taskWebsite" placeholder="如 my-store.myshopify.com（也可用上面的 URL）"></div>
+      <div class="arg-row"><label>提取字段</label>
+        <textarea id="taskFields" placeholder="每行一个：字段名:CSS选择器&#10;例：&#10;标题:h1.product-title&#10;价格:.price&#10;链接:a.title::attr(href)&#10;留空则只抓 URL"></textarea></div>
+      <div class="arg-row" id="rowCrawlRules" style="display:none"><label>跟随规则</label>
+        <textarea id="taskRules" placeholder="每行一个正则，匹配的链接才跟随（留空 = 跟随全部站内链接）&#10;例：/product/\d+"></textarea></div>
+      <div class="arg-row" id="rowItertag" style="display:none"><label>XML 节点</label>
+        <input id="taskItertag" value="item" placeholder="迭代的 XML 节点名，如 item / entry"></div>
+      <div class="arg-row" id="rowCsvHeaders" style="display:none"><label>CSV 表头</label>
+        <input id="taskCsvHeaders" placeholder="逗号分隔的列名，如 title,price,sku"></div>
+      <div class="toolbar" style="flex-wrap:wrap;align-items:center;gap:14px">
+        <label style="color:var(--muted);font-size:12px">并发数 <input type="number" id="taskConcurrency" value="4" min="1" max="8" style="width:60px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></label>
+        <label style="color:var(--muted);font-size:12px">延迟(秒) <input type="number" id="taskDelay" value="0" min="0" step="0.1" style="width:60px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)"></label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="taskAdaptive"> 自适应选择器</label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="taskProxy"> 轮换代理池</label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="taskAutothrottle"> 自动限速</label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="taskRobots"> 遵守 robots.txt</label>
+        <label style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="taskDevCache"> 开发模式缓存</label>
+        <label style="color:var(--muted);font-size:12px">导出格式
+          <select id="taskExport" style="padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <option value="jsonl">JSONL（每行一条）</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="xml">XML</option>
+          </select>
+        </label>
+        <button class="btn green" onclick="createTask()">＋ 创建任务</button>
+      </div>
+      <div class="msg" id="taskMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>任务列表 <small id="taskListCount"></small></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>任务</th><th>类型</th><th>状态</th><th>条数</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody id="taskBody"><tr><td colspan="6" style="color:var(--muted)">加载中...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="msg" id="taskListMsg"></div>
+      <div class="result hidden" id="taskLog"></div>
+    </div>
+  </section>
+
+  <!-- 教程 -->
+  <section id="sec-guide" class="hidden">
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-book"/></svg> 新手 3 分钟上手<small>完全不用懂代码，照着点就行</small></h2>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:250px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:28px;font-weight:800;color:var(--accent)">1</div>
+          <div style="font-weight:600;margin:6px 0">打开「MCP 工具台」</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">最顶部就是<b>快捷任务</b>，这里填 URL 就能抓，不用懂任何参数。<br><br><svg class="ic"><use href="#i-hand"/></svg> 先在 URL 框粘贴你要抓的网址。</div>
+        </div>
+        <div style="flex:1;min-width:250px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:28px;font-weight:800;color:var(--accent)">2</div>
+          <div style="font-weight:600;margin:6px 0">选一个模式，点「一键抓取」</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">第一次用就选<b>「普通抓取」</b>，覆盖 90% 的网站。<br><br><svg class="ic"><use href="#i-hand"/></svg> 网站有验证码/盾牌（Cloudflare）就选<b>「反爬抓取」</b>。</div>
+        </div>
+        <div style="flex:1;min-width:250px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px">
+          <div style="font-size:28px;font-weight:800;color:var(--accent)">3</div>
+          <div style="font-weight:600;margin:6px 0">看结果 / 保存</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">抓取结果直接显示在下方。<br><br><svg class="ic"><use href="#i-hand"/></svg> 想批量、定时抓整个网站？用「<b>爬虫任务</b>」标签页，填 URL 就能后台跑。</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:12px 14px;background:rgba(79,140,255,.08);border:1px solid rgba(79,140,255,.25);border-radius:8px;font-size:13px;color:var(--muted)">
+        <svg class="ic"><use href="#i-bulb"/></svg> <b style="color:var(--text)">一句话总结：</b>抓单个网页 → 快捷任务；抓整站/定时抓 → 爬虫任务；网站难防爬 → 开「反爬抓取」或勾「轮换代理池」。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-map"/></svg> 三张图看懂 Scrapling<small>导图 1：抓取工具怎么选</small></h2>
+      <div style="background:#0b101c;border:1px solid var(--border);border-radius:10px;padding:14px;overflow-x:auto">
+      <svg viewBox="0 0 960 330" width="100%" style="min-width:860px" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,'PingFang SC','Microsoft YaHei',sans-serif">
+        <defs>
+          <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#B6E018"/>
+          </marker>
+          <marker id="arr1g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#5FD3B2"/>
+          </marker>
+          <marker id="arr1w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#E8A33D"/>
+          </marker>
+        </defs>
+        <!-- 开始 -->
+        <rect x="360" y="10" width="240" height="46" rx="23" fill="#1b1e19" stroke="#B6E018" stroke-width="1.5"/>
+        <text x="480" y="38" text-anchor="middle" fill="#e6eaf2" font-size="15" font-weight="700">开始：我要抓一个网站</text>
+        <!-- 判断 1 -->
+        <line x1="480" y1="56" x2="480" y2="80" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <rect x="300" y="82" width="360" height="52" rx="12" fill="#141613" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+        <text x="480" y="102" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="600">需要保持登录 / 连续访问很多页？</text>
+        <text x="480" y="122" text-anchor="middle" fill="#8b94ad" font-size="11">（比如要带着登录状态翻 20 页、多次请求同一个接口）</text>
+        <!-- 是 → 会话路线 -->
+        <line x1="660" y1="108" x2="760" y2="108" stroke="#5FD3B2" stroke-width="1.5" marker-end="url(#arr1g)"/>
+        <text x="712" y="100" text-anchor="middle" fill="#5FD3B2" font-size="12" font-weight="600">是</text>
+        <rect x="762" y="78" width="190" height="60" rx="12" fill="#1b1e19" stroke="#5FD3B2" stroke-width="1.2"/>
+        <text x="857" y="100" text-anchor="middle" fill="#5FD3B2" font-size="12" font-weight="600">开「会话」</text>
+        <text x="857" y="120" text-anchor="middle" fill="#8b94ad" font-size="10">open_session 开房间</text>
+        <text x="857" y="134" text-anchor="middle" fill="#8b94ad" font-size="10">session_fetch 反复用</text>
+        <!-- 否 → 判断 2 -->
+        <line x1="300" y1="108" x2="210" y2="108" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <text x="252" y="100" text-anchor="middle" fill="#e6eaf2" font-size="12" font-weight="600">否</text>
+        <line x1="210" y1="108" x2="210" y2="180" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <rect x="40" y="182" width="340" height="52" rx="12" fill="#141613" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+        <text x="210" y="202" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="600">网站有反爬吗？（验证码 / Cloudflare 盾牌 / 人机检测）</text>
+        <text x="210" y="222" text-anchor="middle" fill="#8b94ad" font-size="11">特征：打开就转圈验证、403 拒绝、提示"检测到机器人"</text>
+        <!-- 是 → stealthy -->
+        <line x1="380" y1="208" x2="480" y2="208" stroke="#E8A33D" stroke-width="1.5" marker-end="url(#arr1w)"/>
+        <text x="432" y="200" text-anchor="middle" fill="#E8A33D" font-size="12" font-weight="600">是</text>
+        <rect x="482" y="178" width="190" height="60" rx="12" fill="#1b1e19" stroke="#E8A33D" stroke-width="1.2"/>
+        <text x="577" y="200" text-anchor="middle" fill="#E8A33D" font-size="12" font-weight="600">穿「隐身衣」</text>
+        <text x="577" y="218" text-anchor="middle" fill="#8b94ad" font-size="10">stealthy_fetch（高防唯一解）</text>
+        <!-- 否 → 判断 3 -->
+        <line x1="210" y1="234" x2="210" y2="262" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <text x="236" y="252" text-anchor="middle" fill="#e6eaf2" font-size="12" font-weight="600">否</text>
+        <rect x="40" y="264" width="340" height="52" rx="12" fill="#141613" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+        <text x="210" y="284" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="600">抓的是接口，还是普通网页？</text>
+        <text x="210" y="304" text-anchor="middle" fill="#8b94ad" font-size="11">接口 = 返回 JSON/数据的地址；网页 = 要浏览器渲染的 HTML</text>
+        <!-- 接口 -->
+        <line x1="380" y1="290" x2="520" y2="290" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <text x="452" y="282" text-anchor="middle" fill="#e6eaf2" font-size="12" font-weight="600">接口</text>
+        <rect x="522" y="262" width="190" height="56" rx="12" fill="#1b1e19" stroke="#B6E018" stroke-width="1.2"/>
+        <text x="617" y="284" text-anchor="middle" fill="#B6E018" font-size="12" font-weight="600">最快最省</text>
+        <text x="617" y="302" text-anchor="middle" fill="#8b94ad" font-size="10">make_request / bulk_get</text>
+        <!-- 网页 -->
+        <line x1="380" y1="316" x2="520" y2="316" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <text x="452" y="308" text-anchor="middle" fill="#e6eaf2" font-size="12" font-weight="600">网页</text>
+        <rect x="522" y="290" width="190" height="52" rx="12" fill="#1b1e19" stroke="#B6E018" stroke-width="1.2"/>
+        <text x="617" y="312" text-anchor="middle" fill="#B6E018" font-size="12" font-weight="600">开浏览器渲染</text>
+        <text x="617" y="330" text-anchor="middle" fill="#8b94ad" font-size="10">fetch / bulk_fetch</text>
+        <!-- 底部提示：截图 -->
+        <rect x="740" y="240" width="210" height="90" rx="12" fill="#141613" stroke="rgba(255,255,255,.16)" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="845" y="266" text-anchor="middle" fill="#8b94ad" font-size="12"><svg class="ic"><use href="#i-camera"/></svg> 想要网页截图？</text>
+        <text x="845" y="288" text-anchor="middle" fill="#8b94ad" font-size="11">先 open_session 开浏览器</text>
+        <text x="845" y="306" text-anchor="middle" fill="#8b94ad" font-size="11">再 screenshot 截图</text>
+        <text x="845" y="324" text-anchor="middle" fill="#8b94ad" font-size="11">用完全部 close_session</text>
+      </svg>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)">读图顺序：从顶部开始 → 一路回答"是/否" → 落到最下面的工具就是你应该用的。</div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-map"/></svg> 三张图看懂 Scrapling<small>导图 2：会话是什么</small></h2>
+      <div style="background:#0b101c;border:1px solid var(--border);border-radius:10px;padding:14px;overflow-x:auto">
+      <svg viewBox="0 0 960 200" width="100%" style="min-width:880px" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,'PingFang SC','Microsoft YaHei',sans-serif">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#B6E018"/>
+          </marker>
+        </defs>
+        <!-- 步骤 -->
+        <g>
+          <rect x="20" y="40" width="150" height="80" rx="12" fill="#1b1e19" stroke="#5FD3B2" stroke-width="1.5"/>
+          <text x="95" y="66" text-anchor="middle" fill="#5FD3B2" font-size="13" font-weight="700">① 开房间</text>
+          <text x="95" y="86" text-anchor="middle" fill="#8b94ad" font-size="11">open_session</text>
+          <text x="95" y="102" text-anchor="middle" fill="#8b94ad" font-size="11">得到一把"钥匙"</text>
+          <text x="95" y="116" text-anchor="middle" fill="#8b94ad" font-size="11">（session_id）</text>
+          <line x1="170" y1="80" x2="210" y2="80" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr2)"/>
+        </g>
+        <g>
+          <rect x="215" y="40" width="170" height="80" rx="12" fill="#1b1e19" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+          <text x="300" y="66" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="700">② 反复用</text>
+          <text x="300" y="86" text-anchor="middle" fill="#8b94ad" font-size="11">session_fetch 抓页面</text>
+          <text x="300" y="102" text-anchor="middle" fill="#8b94ad" font-size="11">session_make_request 调接口</text>
+          <text x="300" y="116" text-anchor="middle" fill="#8b94ad" font-size="11">screenshot 截图</text>
+          <line x1="385" y1="80" x2="425" y2="80" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr2)"/>
+        </g>
+        <g>
+          <rect x="430" y="40" width="150" height="80" rx="12" fill="#1b1e19" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+          <text x="505" y="66" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="700">③ 查看</text>
+          <text x="505" y="86" text-anchor="middle" fill="#8b94ad" font-size="11">list_sessions</text>
+          <text x="505" y="102" text-anchor="middle" fill="#8b94ad" font-size="11">或看本页底部</text>
+          <text x="505" y="116" text-anchor="middle" fill="#8b94ad" font-size="11">「浏览器会话」面板</text>
+          <line x1="580" y1="80" x2="620" y2="80" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr2)"/>
+        </g>
+        <g>
+          <rect x="625" y="40" width="150" height="80" rx="12" fill="#1b1e19" stroke="#FF4D3D" stroke-width="1.5"/>
+          <text x="700" y="66" text-anchor="middle" fill="#FF4D3D" font-size="13" font-weight="700">④ 关房间</text>
+          <text x="700" y="86" text-anchor="middle" fill="#8b94ad" font-size="11">close_session</text>
+          <text x="700" y="102" text-anchor="middle" fill="#8b94ad" font-size="11">用完必须关！</text>
+          <text x="700" y="116" text-anchor="middle" fill="#8b94ad" font-size="11">释放内存</text>
+          <line x1="775" y1="80" x2="815" y2="80" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr2)"/>
+        </g>
+        <g>
+          <rect x="820" y="30" width="120" height="100" rx="12" fill="#141613" stroke="#E8A33D" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <text x="880" y="58" text-anchor="middle" fill="#E8A33D" font-size="12" font-weight="600"><svg class="ic"><use href="#i-alert"/></svg> 为什么要有会话？</text>
+          <text x="880" y="80" text-anchor="middle" fill="#8b94ad" font-size="10">开一次浏览器很慢</text>
+          <text x="880" y="96" text-anchor="middle" fill="#8b94ad" font-size="10">会话 = 浏览器一直</text>
+          <text x="880" y="110" text-anchor="middle" fill="#8b94ad" font-size="10">开着等你用</text>
+          <text x="880" y="124" text-anchor="middle" fill="#8b94ad" font-size="10">登录状态还在</text>
+        </g>
+      </svg>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)"><svg class="ic"><use href="#i-target"/></svg> 最常用场景：先 open_session 登录 → 用 session_fetch 带着登录状态连续抓多个页面 → 用完 close_session。这样既快又不会每页重新登录。</div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-map"/></svg> 三张图看懂 Scrapling<small>导图 3：爬虫任务是怎么跑的</small></h2>
+      <div style="background:#0b101c;border:1px solid var(--border);border-radius:10px;padding:14px;overflow-x:auto">
+      <svg viewBox="0 0 960 210" width="100%" style="min-width:900px" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,'PingFang SC','Microsoft YaHei',sans-serif">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#B6E018"/>
+          </marker>
+        </defs>
+        <g>
+          <rect x="20" y="50" width="140" height="84" rx="12" fill="#1b1e19" stroke="#B6E018" stroke-width="1.5"/>
+          <text x="90" y="76" text-anchor="middle" fill="#B6E018" font-size="13" font-weight="700">① 创建</text>
+          <text x="90" y="96" text-anchor="middle" fill="#8b94ad" font-size="11">爬虫任务页</text>
+          <text x="90" y="110" text-anchor="middle" fill="#8b94ad" font-size="11">填 URL + 选类型</text>
+          <text x="90" y="124" text-anchor="middle" fill="#8b94ad" font-size="11">点「创建任务」</text>
+          <line x1="160" y1="92" x2="200" y2="92" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr3)"/>
+        </g>
+        <g>
+          <rect x="205" y="50" width="140" height="84" rx="12" fill="#1b1e19" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+          <text x="275" y="76" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="700">② 启动</text>
+          <text x="275" y="96" text-anchor="middle" fill="#8b94ad" font-size="11">点「启动」</text>
+          <text x="275" y="110" text-anchor="middle" fill="#8b94ad" font-size="11">后台容器自动开跑</text>
+          <text x="275" y="124" text-anchor="middle" fill="#8b94ad" font-size="11">关掉页面也在跑</text>
+          <line x1="345" y1="92" x2="385" y2="92" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr3)"/>
+        </g>
+        <g>
+          <rect x="390" y="50" width="160" height="84" rx="12" fill="#1b1e19" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+          <text x="470" y="76" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="700">③ 跑 & 可暂停</text>
+          <text x="470" y="96" text-anchor="middle" fill="#8b94ad" font-size="11">一条一条抓，写进结果文件</text>
+          <text x="470" y="112" text-anchor="middle" fill="#5FD3B2" font-size="11">暂停 = 记断点休息</text>
+          <text x="470" y="126" text-anchor="middle" fill="#5FD3B2" font-size="11">恢复 = 从断点继续</text>
+          <line x1="550" y1="92" x2="590" y2="92" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr3)"/>
+        </g>
+        <g>
+          <rect x="595" y="50" width="140" height="84" rx="12" fill="#1b1e19" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>
+          <text x="665" y="76" text-anchor="middle" fill="#e6eaf2" font-size="13" font-weight="700">④ 完成</text>
+          <text x="665" y="96" text-anchor="middle" fill="#8b94ad" font-size="11">状态变「已完成」</text>
+          <text x="665" y="110" text-anchor="middle" fill="#8b94ad" font-size="11">列表显示抓了多少条</text>
+          <text x="665" y="124" text-anchor="middle" fill="#8b94ad" font-size="11">点「日志」看过程</text>
+          <line x1="735" y1="92" x2="775" y2="92" stroke="#B6E018" stroke-width="1.5" marker-end="url(#arr3)"/>
+        </g>
+        <g>
+          <rect x="780" y="50" width="160" height="84" rx="12" fill="#1b1e19" stroke="#5FD3B2" stroke-width="1.5"/>
+          <text x="860" y="76" text-anchor="middle" fill="#5FD3B2" font-size="13" font-weight="700">⑤ 导出</text>
+          <text x="860" y="96" text-anchor="middle" fill="#8b94ad" font-size="11">点「导出」下载</text>
+          <text x="860" y="112" text-anchor="middle" fill="#8b94ad" font-size="11">JSONL / CSV / JSON / XML</text>
+          <text x="860" y="126" text-anchor="middle" fill="#8b94ad" font-size="11">Excel / 程序都能打开</text>
+        </g>
+        <text x="480" y="30" text-anchor="middle" fill="#8b94ad" font-size="12">一个"爬虫任务" = 一个小爬虫程序，在服务器后台自动帮你把整个网站的页面挨个抓下来</text>
+      </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-wrench"/></svg> 13 个 MCP 工具逐个教学<small>按使用频率分三组：日常抓取 / 高防网站 / 会话三件套</small></h2>
+
+      <div class="guide-sec-title"><span class="dot g"></span> A 组 · 日常抓取（先用这几个就对了）<small>覆盖 90% 的抓取需求</small></div>
+      <div class="tg-grid">
+
+        <div class="tg-card">
+          <div class="tg-head"><code>fetch</code> 浏览器抓取 <span class="tg-tag green">最常用 ⭐</span></div>
+          <div class="tg-what"><b>大白话：</b>偷偷开一个真浏览器，把网页打开、渲染完，再把内容拿回来。</div>
+          <div class="tg-row"><b>用它干嘛：</b>抓普通新闻、论坛、商品页；网页内容靠 JS 动态加载、直接请求拿不到时，必须用它。</div>
+          <div class="tg-how"><span class="step-num">1</span>填 URL（必填）<br><span class="step-num">2</span>想只要正文 → 勾 <b>main_content_only</b>（去广告导航）<br><span class="step-num">3</span>想取特定内容 → 在 <b>css_selector</b> 填选择器（如 <code>.price</code>）<br><span class="step-num">4</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 网站有 Cloudflare 盾牌/验证码时它可能 403，这时换 B 组的 stealthy_fetch。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>make_request</code> HTTP 请求 <span class="tg-tag">最快最省 <svg class="ic"><use href="#i-bolt"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>不开浏览器，直接用程序"按门铃"拿数据。比浏览器快几十倍。</div>
+          <div class="tg-row"><b>用它干嘛：</b>抓 API 接口（返回 JSON）、提交表单、下载文件；页面不需要 JS 渲染时的首选。</div>
+          <div class="tg-how"><span class="step-num">1</span>填 URL（必填）<br><span class="step-num">2</span>选 <b>method</b>：GET 拿数据 / POST 提交<br><span class="step-num">3</span>POST 时在 <b>json</b> 或 <b>data</b> 填要提交的内容<br><span class="step-num">4</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 只适合"普通"网站；遇到反爬就换 stealthy_fetch。接口返回 JSON 时结果会直接显示。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>bulk_get</code> 批量 HTTP <span class="tg-tag">一批抓多个 <svg class="ic"><use href="#i-bolt"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>一次把好几个接口/页面一起抓回来，不用一个个点。</div>
+          <div class="tg-row"><b>用它干嘛：</b>同时抓一批商品价格、多个新闻链接、批量检查链接是否有效。</div>
+          <div class="tg-how"><span class="step-num">1</span>在 <b>urls</b> 填数组（JSON 格式：<code>["https://a.com","https://b.com"]</code>）<br><span class="step-num">2</span>点「调用工具」，结果会按顺序返回</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> urls 要用 JSON 数组格式；几十个一起抓注意别太大，分批更好。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>bulk_fetch</code> 浏览器批量 <span class="tg-tag">一批抓多个 <svg class="ic"><use href="#i-globe"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>开一个浏览器，同时打开多个网页并抓回内容。</div>
+          <div class="tg-row"><b>用它干嘛：</b>批量抓需要渲染的页面（商品详情、文章列表）；比一个个 fetch 快很多。</div>
+          <div class="tg-how"><span class="step-num">1</span>在 <b>urls</b> 填 JSON 数组<br><span class="step-num">2</span>想只要正文勾 <b>main_content_only</b><br><span class="step-num">3</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 数量多会占内存（服务器只有 1.7G），建议一次别超过 10 个。</div>
+        </div>
+
+      </div>
+
+      <div class="guide-sec-title"><span class="dot y"></span> B 组 · 高防网站（网站有盾牌就靠它）<small>Cloudflare、人机验证、强反爬的唯一解</small></div>
+      <div class="tg-grid">
+
+        <div class="tg-card">
+          <div class="tg-head"><code>stealthy_fetch</code> 隐身衣抓取 <span class="tg-tag red">高防专用 <svg class="ic"><use href="#i-shield"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>披上"隐身衣"（模拟真人浏览器指纹+行为），骗过网站的机器人检测。</div>
+          <div class="tg-row"><b>用它干嘛：</b>抓有 Cloudflare 盾牌、验证码、403 拦截、提示"检测到异常流量"的网站。<b>高防护网站只有它能过。</b></div>
+          <div class="tg-how"><span class="step-num">1</span>填 URL（必填）<br><span class="step-num">2</span>遇到 Cloudflare → 勾 <b>solve_cloudflare</b><br><span class="step-num">3</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 比 fetch 慢一点（要伪装得更细致）；被限流可以勾「轮换代理池」。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>bulk_stealthy_fetch</code> 隐身批量 <span class="tg-tag red">高防批量 <svg class="ic"><use href="#i-shield"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>穿隐身衣一次抓多个高防页面。</div>
+          <div class="tg-row"><b>用它干嘛：</b>批量抓有防护的商品/文章列表。</div>
+          <div class="tg-how"><span class="step-num">1</span><b>urls</b> 填 JSON 数组<br><span class="step-num">2</span>需要时勾 <b>solve_cloudflare</b><br><span class="step-num">3</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 高防网站批量更容易被限流，建议配合代理 + 分批。</div>
+        </div>
+
+      </div>
+
+      <div class="guide-sec-title"><span class="dot b"></span> C 组 · 会话三件套（要登录、要连续翻页、要截图）<small>浏览器一直开着等你用</small></div>
+      <div class="tg-grid">
+
+        <div class="tg-card">
+          <div class="tg-head"><code>open_session</code> 开浏览器房间 <span class="tg-tag">第一步 <svg class="ic"><use href="#i-door"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>在服务器后台开一个"一直开着的浏览器"，给你一把钥匙（session_id）。</div>
+          <div class="tg-row"><b>用它干嘛：</b>需要保持登录状态、连续抓很多页、要截图前的第一步。</div>
+          <div class="tg-how"><span class="step-num">1</span>选 <b>session_type</b>：dynamic（普通）/ stealthy（防爬）<br><span class="step-num">2</span><b>headless</b> 默认 True（不弹窗，省资源）<br><span class="step-num">3</span>点「调用工具」→ 记下返回的 <b>session_id</b></div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 开完一定要用 close_session 关掉，否则浏览器一直占内存。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>session_fetch</code> 用房间抓页面 <span class="tg-tag">第二步 <svg class="ic"><use href="#i-key"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>用已经开好的浏览器去抓网页（带着登录状态、不用重新开）。</div>
+          <div class="tg-row"><b>用它干嘛：</b>登录后才能看的页面、连续翻页抓列表、需要保持会话的多步操作。</div>
+          <div class="tg-how"><span class="step-num">1</span>填 <b>url</b>（必填）<br><span class="step-num">2</span>填 <b>session_id</b>（开房间时拿到的钥匙，必填）<br><span class="step-num">3</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> session_id 填错会报错；去「浏览器会话」面板能看到当前所有房间的 id。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>session_make_request</code> 用房间调接口 <span class="tg-tag">第二步 <svg class="ic"><use href="#i-key"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>用已开的 HTTP 会话发请求，保留 cookies（比如登录 token）。</div>
+          <div class="tg-row"><b>用它干嘛：</b>登录后调 API、带 token 连续请求接口。</div>
+          <div class="tg-how"><span class="step-num">1</span>先 <b>open_request_session</b> 开 HTTP 会话<br><span class="step-num">2</span>填 <b>url</b> + <b>session_id</b>（必填）<br><span class="step-num">3</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> HTTP 会话比浏览器会话更省资源；只调接口用这个就够了。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>open_request_session</code> 开 HTTP 会话 <span class="tg-tag">第一步 <svg class="ic"><use href="#i-door"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>开一个"没有浏览器、纯网络"的会话，专门给接口用，快且省内存。</div>
+          <div class="tg-row"><b>用它干嘛：</b>调 API 前先开它，之后 session_make_request 就能带着登录状态发请求。</div>
+          <div class="tg-how"><span class="step-num">1</span><b>impersonate</b> 默认 chrome（伪装成 Chrome 浏览器）<br><span class="step-num">2</span>点「调用工具」→ 记下 session_id</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 它不带浏览器，不能截图、不能渲染页面。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>screenshot</code> 网页截图 <span class="tg-tag">要图就选它 <svg class="ic"><use href="#i-camera"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>给网页拍张照片（支持整页长截图）。</div>
+          <div class="tg-row"><b>用它干嘛：</b>保存网页证据、预览页面长相、给电商商品页留档。</div>
+          <div class="tg-how"><span class="step-num">1</span>先 <b>open_session</b> 开浏览器（必填前提）<br><span class="step-num">2</span>填 <b>url</b> + <b>session_id</b>（必填）<br><span class="step-num">3</span><b>full_page</b> 勾 True = 截整页长图<br><span class="step-num">4</span>点「调用工具」，图片直接显示在结果里</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 别忘了关会话。快捷任务的「网页截图」模式已经帮你自动开→截→关，小白直接用那个。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>list_sessions</code> 看房间列表 <span class="tg-tag">查看 <svg class="ic"><use href="#i-eye"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>列出所有开着的"房间"（会话）和它们的配置。</div>
+          <div class="tg-row"><b>用它干嘛：</b>忘记 session_id 了？忘了关会话？来这里看。</div>
+          <div class="tg-how"><span class="step-num">1</span>直接点「调用工具」（无需参数）</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 本页「MCP 工具台」底部有「浏览器会话」面板，就是它，还能一键关闭。</div>
+        </div>
+
+        <div class="tg-card">
+          <div class="tg-head"><code>close_session</code> 关房间 <span class="tg-tag red">用完必做 <svg class="ic"><use href="#i-door"/></svg><svg class="ic"><use href="#i-x"/></svg></span></div>
+          <div class="tg-what"><b>大白话：</b>把开着的浏览器关掉，释放内存。</div>
+          <div class="tg-row"><b>用它干嘛：</b>每次用完会话后的收尾动作；服务器内存小，不关会卡。</div>
+          <div class="tg-how"><span class="step-num">1</span>填 <b>session_id</b>（必填，要关哪个房间）<br><span class="step-num">2</span>点「调用工具」</div>
+          <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 关掉的会话不能再用于 session_fetch；用错了 id 会报错，重新开一个即可。</div>
+        </div>
+
+      </div>
+
+      <div class="guide-sec-title"><svg class="ic"><use href="#i-puzzle"/></svg> 进阶参数小词典<small>填参数前先看这里（各工具通用）</small></div>
+      <table class="mini-table">
+        <thead><tr><th>参数</th><th>大白话</th><th>什么时候填</th></tr></thead>
+        <tbody>
+          <tr><td><code>extraction_type</code></td><td>返回格式：markdown（干净文本）/ html（带标签）/ text（纯文字）</td><td>默认 markdown 即可；要原样 HTML 选 html</td></tr>
+          <tr><td><code>css_selector</code></td><td>CSS 选择器，只提取页面里的某一块</td><td>只想拿标题/价格/列表时（如 <code>.price</code>）</td></tr>
+          <tr><td><code>main_content_only</code></td><td>只要正文，自动去掉广告和导航</td><td>抓文章内容时勾上（默认已勾）</td></tr>
+          <tr><td><code>timeout</code></td><td>最多等几秒，超时就放弃</td><td>网站慢时调大到 60</td></tr>
+          <tr><td><code>proxy</code></td><td>走某个代理 IP</td><td>被限 IP 时；或直接勾快捷任务的「轮换代理池」</td></tr>
+          <tr><td><code>wait / network_idle</code></td><td>等页面加载：等 N 秒 / 等所有资源加载完</td><td>页面内容加载慢、动态渲染时</td></tr>
+          <tr><td><code>solve_cloudflare</code></td><td>尝试自动过 Cloudflare 验证</td><td>stealthy_fetch 遇到盾牌时勾上</td></tr>
+          <tr><td><code>method / json / data</code></td><td>请求方式与提交内容</td><td>调接口、提交表单时（POST + json）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-spider"/></svg> 爬虫任务教学<small>不只会抓一个页面，让服务器帮你把整站抓下来</small></h2>
+
+      <div class="guide-sec-title">第一步 · 选任务类型</div>
+      <table class="mini-table">
+        <thead><tr><th>场景</th><th>选哪个类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>只抓几个固定页面</td><td><b>单页/指定页提取</b></td><td>把 URL 填进去，每页提取字段，最快</td></tr>
+          <tr><td>抓整个网站的所有页面</td><td><b>全站爬取（跟随链接）</b></td><td>从起始页开始自动点链接一路抓，可加规则只抓某类页面</td></tr>
+          <tr><td>网站有 sitemap.xml</td><td><b>站点地图（Sitemap）</b></td><td>网站自己列了所有页面的清单，按清单抓最全</td></tr>
+          <tr><td>抓 RSS / XML 订阅源</td><td><b>XML / RSS Feed</b></td><td>填订阅地址 + 节点名（如 item），自动解析每条</td></tr>
+          <tr><td>抓 CSV 数据文件</td><td><b>CSV Feed</b></td><td>政府/统计站常见，自动按行解析</td></tr>
+          <tr><td>抓 Shopify 商城产品</td><td><b>Shopify 商店产品</b></td><td>填商店域名，自动走官方 JSON 接口拿全部产品+规格</td></tr>
+        </tbody>
+      </table>
+
+      <div class="guide-sec-title">第二步 · 填"提取字段"（不懂代码也能写）</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:8px">提取字段 = 告诉爬虫"每页你要拿走哪几样东西"。每行一个：<b style="color:var(--text)">名字:CSS选择器</b></div>
+      <div class="css-demo">标题:h1.product-title
+价格:.price
+链接:a.title::attr(href)
+图片:img.main::attr(src)</div>
+      <table class="mini-table">
+        <thead><tr><th>想拿什么</th><th>选择器写法</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>页面的主标题</td><td><code>h1</code> 或 <code>h1.title</code></td><td>标签名 + 类名</td></tr>
+          <tr><td>某个 class 里的文字</td><td><code>.price</code></td><td>点号 = class</td></tr>
+          <tr><td>某个 id 里的文字</td><td><code>#main</code></td><td>井号 = id</td></tr>
+          <tr><td>链接地址</td><td><code>a::attr(href)</code></td><td>::attr(属性名) 取属性</td></tr>
+          <tr><td>图片地址</td><td><code>img::attr(src)</code></td><td>同上</td></tr>
+          <tr><td>一整段文字</td><td><code>div.content p</code></td><td>空格 = 里面的子元素</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)"><svg class="ic"><use href="#i-bulb"/></svg> 不知道选择器？打开网页按 F12 → 右键目标元素 → Copy → Copy selector，粘贴过来就能用。</div>
+
+      <div class="guide-sec-title">第三步 · 高级开关都是啥</div>
+      <table class="mini-table">
+        <thead><tr><th>开关</th><th>大白话</th><th>什么时候开</th></tr></thead>
+        <tbody>
+          <tr><td><b>自适应选择器</b></td><td>网站改版后自动重新找元素，选择器不会失效</td><td>抓长期监控的站，强烈建议开</td></tr>
+          <tr><td><b>轮换代理池</b></td><td>每次请求换一个 IP，避免被网站封</td><td>抓得多、被限流时开；免费代理会变慢</td></tr>
+          <tr><td><b>自动限速</b></td><td>根据网站响应速度自动调节抓取频率，温柔不伤人</td><td>怕被封、对对方服务器友好的选择</td></tr>
+          <tr><td><b>遵守 robots.txt</b></td><td>遵循网站的爬虫协议（说不能抓的就不抓）</td><td>合规需求时开</td></tr>
+          <tr><td><b>开发模式缓存</b></td><td>抓过的页面存本地，下次直接读缓存，不重复请求</td><td>调规则反复试的时候开，快很多</td></tr>
+          <tr><td><b>并发数</b></td><td>同时抓几个页面（1-8）</td><td>默认 4；服务器内存小，别超过 4</td></tr>
+          <tr><td><b>延迟(秒)</b></td><td>每抓一页中间歇几秒</td><td>网站慢或怕被封时设 1-3</td></tr>
+        </tbody>
+      </table>
+
+      <div class="guide-sec-title">第四步 · 导出格式选哪个</div>
+      <table class="mini-table">
+        <thead><tr><th>格式</th><th>适合谁</th></tr></thead>
+        <tbody>
+          <tr><td><b>JSONL</b>（每行一条）</td><td>程序处理首选，Excel 也能打开，数据最完整</td></tr>
+          <tr><td><b>CSV</b></td><td>Excel / WPS 直接打开，人看最方便</td></tr>
+          <tr><td><b>JSON</b></td><td>给程序员/API 对接用</td></tr>
+          <tr><td><b>XML</b></td><td>老系统 / 特定软件需要</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-help"/></svg> 常见问题 FAQ<small>抓不到东西先看这里</small></h2>
+      <details class="guide-faq" open>
+        <summary>Q1：抓回来的内容是空的 / 乱码？</summary>
+        <p>① 试试把 <b>extraction_type</b> 换成 <b>html</b> 看看原始结构；② 用 <b>css_selector</b> 精确定位；③ 网页内容是 JS 动态加载的 → 用 <b>fetch</b>（浏览器渲染）而不是 make_request；④ 偶尔遇到压缩编码问题，换 fetch 再试即可。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q2：网站返回 403 / 验证码 / "检测到异常流量"？</summary>
+        <p>这是反爬拦截。改用 <b>stealthy_fetch</b>（隐身衣），必要时勾 <b>solve_cloudflare</b> + 开「轮换代理池」。还不行就放慢频率（加延迟/自动限速）。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q3：代理池为什么慢？存活率为什么低？</summary>
+        <p>免费代理很多是"僵尸"，不稳定。用「代理池」页的<b>存活检测</b>先筛一遍，或者用高匿代理。任务开着代理轮换时会明显变慢，这是正常的。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q4：爬虫任务点了暂停没反应？</summary>
+        <p>任务太快跑完了（秒级任务）来不及暂停；暂停对大网站（分钟级）效果明显。暂停后状态变「已暂停」，点恢复从断点继续，已抓的不重复。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q5：服务器会不会卡死？内存不够怎么办？</summary>
+        <p>服务器只有 1.7G 内存。建议：同一时间只跑一个爬虫任务；并发数别超 4；浏览器会话用完就 close_session；别同时开太多 dynamic 会话。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q6：我要登录才能看的内容怎么抓？</summary>
+        <p>用会话三件套：open_session 开房间 → （在浏览器里登录一次）→ session_fetch 带登录状态抓 → close_session。或先手动拿到登录后的 cookie，填到工具的 cookies 参数里。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q7：MCP 工具和爬虫任务有什么区别？</summary>
+        <p><b>MCP 工具</b> = 即时工具，抓一次给你一次结果，适合临时抓取、验证。<b>爬虫任务</b> = 后台程序，适合批量、定时、全站抓取，结果落盘可导出。小任务用工具，大工程用任务。</p>
+      </details>
+      <details class="guide-faq">
+        <summary>Q8：怎么确认我的选择器写对了？</summary>
+        <p>先到「MCP 工具台」用 <b>fetch</b> + <b>css_selector</b> 试抓一页，结果里有内容就说明选择器对，再建爬虫任务批量跑。</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 服务状态 -->
+  <section id="sec-status" class="hidden">
+    <div class="card">
+      <h2>服务状态</h2>
+      <div class="grid" id="statGrid"></div>
+      <div class="status-row" id="sysRow"></div>
+    </div>
+  </section>
+
+  <!-- ================= 概览 ================= -->
+  <section id="sec-overview">
+    <div class="ov-grid">
+      <div>
+        <div class="ov-card">
+          <h3>快速开始</h3>
+          <div class="ov-quick">
+            <a onclick="switchTab('tools')"><div class="t"><svg class="ic"><use href="#i-tools"/></svg> 快捷抓取</div><div class="d">填 URL 就能抓，自动编排参数</div></a>
+            <a onclick="switchTab('advanced')"><div class="t"><svg class="ic"><use href="#i-file"/></svg> 网页转 Markdown</div><div class="d">LLM 就绪，喂给 AI 不用洗</div></a>
+            <a onclick="switchTab('proxy')"><div class="t"><svg class="ic"><use href="#i-globe"/></svg> 用代理访问</div><div class="d">代理池 IP 打开注册页，防风控</div></a>
+            <a onclick="switchTab('tasks')"><div class="t"><svg class="ic"><use href="#i-spider"/></svg> 全站爬取</div><div class="d">后台并发爬整站，可暂停恢复</div></a>
+          </div>
+        </div>
+        <div class="ov-card">
+          <h3>我的额度用量（最近）</h3>
+          <div class="usage-list" id="ovUsage"><span style="color:var(--muted)">加载中…</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="ov-card">
+          <h3>我的账户</h3>
+          <div class="stat" style="margin-bottom:10px"><div class="k">剩余额度</div><div class="v gold" id="ovQuota">—</div></div>
+          <div class="stat"><div class="k">累计已用</div><div class="v" id="ovUsed">—</div></div>
+        </div>
+        <div class="ov-card">
+          <h3>系统状态</h3>
+          <div id="ovStatus"><span style="color:var(--muted)">加载中…</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= 高级工具（上游能力补齐） ================= -->
+  <section id="sec-advanced" class="hidden">
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-bolt"/></svg> 高级工具<small>上游 Scrapling 能力：Markdown 转换 / XHR 捕获 / 选择器验证 / CLI 提取 · 每次调用扣 1 点额度</small></h2>
+      <div class="adv-grid">
+        <div class="adv-card">
+          <h3><svg class="ic"><use href="#i-file"/></svg> 页面转 Markdown <span class="adv-tag">RAG 就绪</span></h3>
+          <p>把网页转成干净、脱敏的 LLM 就绪 Markdown（自动去脚本/广告/导航）。</p>
+          <div class="arg-row"><label>网址 *</label><input id="advMdUrl" placeholder="https://example.com/article"></div>
+          <div class="arg-row"><label>选择器</label><input id="advMdCss" placeholder="可选，如 .article-body（只转该区域）"></div>
+          <button class="btn" onclick="advRun('page_markdown')">转 Markdown</button>
+          <div class="msg" id="advMdMsg"></div>
+          <div class="result hidden" id="advMdRes"></div>
+        </div>
+        <div class="adv-card">
+          <h3><svg class="ic"><use href="#i-folder"/></svg> 全站转 Markdown <span class="adv-tag">语料库</span></h3>
+          <p>SiteToMarkdownSpider：自动跟随站内链接，把整个网站爬成 Markdown 语料（RAG/知识库）。</p>
+          <div class="arg-row"><label>网址 *</label><input id="advSiteUrl" placeholder="https://example.com"></div>
+          <div class="arg-row"><label>最多页数</label><input id="advSitePages" value="20" style="max-width:120px"></div>
+          <button class="btn" onclick="advRun('site_markdown')">全站转 Markdown</button>
+          <div class="msg" id="advSiteMsg"></div>
+          <div class="result hidden" id="advSiteRes"></div>
+        </div>
+        <div class="adv-card">
+          <h3><svg class="ic"><use href="#i-antenna"/></svg> 捕获页面 API 请求 <span class="adv-tag">XHR</span></h3>
+          <p>浏览器加载页面并收集它发出的全部 XHR/fetch，找出站点背后的数据接口。</p>
+          <div class="arg-row"><label>网址 *</label><input id="advXhrUrl" placeholder="https://example.com（动态站）"></div>
+          <button class="btn" onclick="advRun('capture_xhr')">开始捕获</button>
+          <div class="msg" id="advXhrMsg"></div>
+          <div class="result hidden" id="advXhrRes"></div>
+        </div>
+        <div class="adv-card">
+          <h3><svg class="ic"><use href="#i-target"/></svg> 选择器验证 / 生成 <span class="adv-tag">抓取前先验</span></h3>
+          <p>给 CSS / XPath / 文本，返回匹配数量与样例，确认规则有效再开爬。</p>
+          <div class="arg-row"><label>网址 *</label><input id="advSelUrl" placeholder="https://example.com"></div>
+          <div class="arg-row"><label>CSS</label><input id="advSelCss" placeholder="如 .product h2"></div>
+          <div class="arg-row"><label>XPath</label><input id="advSelXpath" placeholder="如 //div[@class='price']"></div>
+          <div class="arg-row"><label>文本</label><input id="advSelText" placeholder="按页面文本找元素"></div>
+          <button class="btn" onclick="advRun('selector_gen')">验证选择器</button>
+          <div class="msg" id="advSelMsg"></div>
+          <div class="result hidden" id="advSelRes"></div>
+        </div>
+        <div class="adv-card">
+          <h3><svg class="ic"><use href="#i-bolt"/></svg> CLI 式提取 <span class="adv-tag">extract</span></h3>
+          <p>等价于官方 <code>scrapling extract</code>：一键输出 Markdown / 纯文本 / HTML。</p>
+          <div class="arg-row"><label>网址 *</label><input id="advCliUrl" placeholder="https://example.com"></div>
+          <div class="arg-row"><label>格式</label>
+            <select id="advCliFmt"><option value="md">Markdown</option><option value="txt">纯文本</option><option value="html">HTML</option></select>
+            <input id="advCliCss" placeholder="可选 CSS 选择器" style="flex:1.5"></div>
+          <div class="arg-row"><label>模式</label>
+            <select id="advCliMode"><option value="get">普通请求</option><option value="fetch">动态渲染</option><option value="stealthy-fetch">反爬绕过</option></select></div>
+          <button class="btn" onclick="advRun('extract_cli')">提取</button>
+          <div class="msg" id="advCliMsg"></div>
+          <div class="result hidden" id="advCliRes"></div>
+        </div>
+        <div class="adv-card">
+          <h3><svg class="ic"><use href="#i-robot"/></svg> 接入 AI（MCP） <span class="adv-tag">全部工具</span></h3>
+          <p>以上高级工具 + 全部控制台能力都已封装成 MCP 工具，AI agent 连上即可调用。</p>
+          <div class="arg-row"><label>工具名</label><input value="page_markdown / site_markdown / capture_xhr / selector_gen / extract_cli" disabled></div>
+          <div class="arg-row"><label>配置</label><span class="hint">去「API 接入」页复制 MCP 连接地址与 Bearer Key，填入 Cline / Claude Desktop。</span></div>
+          <button class="btn gray" onclick="switchTab('api')">去 API 接入页</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= API 接入 ================= -->
+  <section id="sec-api" class="hidden">
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-key"/></svg> API Key 管理<small>生成的 Key 用于 REST API（X-Api-Key）和 MCP（Bearer），调用按你的额度扣减</small></h2>
+      <div class="toolbar">
+        <input type="text" id="apikeyName" placeholder="Key 名称，如：我的爬虫程序" style="max-width:280px">
+        <button class="btn" onclick="createApiKey()">＋ 生成新 Key</button>
+      </div>
+      <div class="msg" id="apikeyMsg"></div>
+      <div id="apikeyNew" class="hidden" style="margin-bottom:10px">
+        <div style="color:var(--gold);font-size:12px;margin-bottom:4px"><svg class="ic"><use href="#i-alert"/></svg> 新 Key 只显示一次，请立即复制保存：</div>
+        <div class="api-keybox" id="apikeyNewVal"></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>名称</th><th>创建时间</th><th>最近使用</th><th>操作</th></tr></thead>
+          <tbody id="apikeyBody"><tr><td colspan="4" style="color:var(--muted)">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-plug"/></svg> REST API 接入<small>任何语言都能调，每次调用扣 1 点额度</small></h2>
+      <div class="guide-sec-title">1 · 请求头鉴权</div>
+      <div class="codeblock"><span class="cm"># 所有 /api/ 接口（除登录注册）都需要这个头</span>
+X-Api-Key: <b style="color:var(--gold)">sk-你的APIKey</b></div>
+      <div class="guide-sec-title">2 · 常用接口示例</div>
+      <div class="codeblock"><span class="cm"># 快捷抓取（等同控制台「快捷任务」）</span>
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick \
+  -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" \
+  -d '{"mode":"stealthy","url":"https://example.com"}'
+
+<span class="cm"># 用代理访问注册页（防风控）</span>
+curl -X POST https://YOUR-SERVER:8080/api/proxy/visit \
+  -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/register","mode":"browser","retries":2}'
+
+<span class="cm"># 页面转 Markdown（高级工具）</span>
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced \
+  -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" \
+  -d '{"tool":"page_markdown","args":{"url":"https://example.com"}}'
+
+<span class="cm"># 查代理池 / 存活池 / 创建任务 … 全部接口见部署文档</span></div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-robot"/></svg> MCP Server 接入<small>让 AI agent（Cline / Claude Desktop / 其他 MCP 客户端）直接调用整个控制台</small></h2>
+      <div class="guide-sec-title">连接信息</div>
+      <div class="codeblock">URL:  <b style="color:var(--accent)">https://YOUR-SERVER:8080/mcp/</b>
+Auth: <b style="color:var(--gold)">Bearer &lt;你的 API Key&gt;</b>   <span class="cm">（不是下面的会话 token，是 API Key）</span></div>
+      <div class="guide-sec-title">Cline（VSCode 插件）配置</div>
+      <div class="codeblock">MCP 设置 → 添加服务器 → 类型选 <b>Streamable HTTP</b>
+URL: https://YOUR-SERVER:8080/mcp/
+Headers: { "Authorization": "Bearer sk-你的APIKey" }</div>
+      <div class="guide-sec-title">Claude Desktop 配置（claude_desktop_config.json）</div>
+      <div class="codeblock">{
+  "mcpServers": {
+    "scrapling": {
+      "type": "http",
+      "url": "https://YOUR-SERVER:8080/mcp/",
+      "headers": { "Authorization": "Bearer sk-你的APIKey" }
+    }
+  }
+}</div>
+      <div class="tg-tip"><svg class="ic"><use href="#i-alert"/></svg> 连上后 AI 可以直接说：用代理访问某注册页 / 查存活代理 / 把某网页转成 Markdown / 创建全站爬取任务 —— 全由 MCP 工具完成，消耗你的额度。</div>
+    </div>
+
+      <div class="card">
+        <h2><svg class="ic"><use href="#i-book"/></svg> API 文档<small>全量 REST 接口 + MCP 工具清单，让任何程序 / AI Agent 接入你的抓取能力</small></h2>
+        <div class="doc-nav">
+          <a href="#api-start">快速开始</a>
+          <a href="#api-auth">① 系统与认证</a>
+          <a href="#api-quick">② 快捷抓取</a>
+          <a href="#api-adv">③ 高级工具</a>
+          <a href="#api-mcp">④ MCP 代理</a>
+          <a href="#api-proxy">⑤ 代理池</a>
+          <a href="#api-visit">⑥ 代理访问</a>
+          <a href="#api-tasks">⑦ 爬虫任务</a>
+          <a href="#api-sess">⑧ 会话</a>
+          <a href="#api-mcp-tools">MCP 工具清单</a>
+        </div>
+
+        <div class="guide-sec-title" id="api-start">快速开始（Python）</div>
+        <div class="gs-card">
+          <h4><svg class="ic"><use href="#i-rocket"/></svg> 一个完整链路：注册 → 拿 API Key → 抓取</h4>
+          <div class="codeblock"><span class="cm"># 1. 注册并登录（免费，注册即送额度）</span>
+import requests
+BASE = "https://YOUR-SERVER:8080"
+r = requests.post(f"{BASE}/api/auth/register", json={"email": "you@example.com", "password": "yourpass123"})
+token = r.json()["token"]          <span class="cm"># 会话 token</span>
+H = {"X-Session-Token": token}
+
+<span class="cm"># 2. 创建 API Key（REST / MCP 都用它鉴权）</span>
+r = requests.post(f"{BASE}/api/me/apikeys", json={"name": "我的程序"}, headers=H)
+API_KEY = r.json()["key"]         <span class="cm"># sk- 开头，只显示一次</span>
+A = {"X-Api-Key": API_KEY, "Content-Type": "application/json"}
+
+<span class="cm"># 3. 快捷抓取一个网页（普通/反爬/截图/批量任意选）</span>
+r = requests.post(f"{BASE}/api/mcp/quick", json={"mode": "stealthy", "url": "https://example.com"}, headers=A)
+print(r.json()["result"]["text"][:500])   <span class="cm"># 网页内容</span>
+
+<span class="cm"># 4. 用代理池的 IP 访问注册页（防风控）</span>
+r = requests.post(f"{BASE}/api/proxy/visit", json={"url": "https://example.com/register", "mode": "browser", "retries": 2}, headers=A)
+print(r.json()["exit_ip"])        <span class="cm"># 出口 IP（保证不是你的服务器 IP）</span></div>
+        </div>
+
+        <div class="gs-card">
+          <h4><svg class="ic"><use href="#i-bulb"/></svg> 鉴权与规则</h4>
+          <table class="ptab"><tbody>
+            <tr><td><code>X-Api-Key: sk-...</code></td><td>REST 接口鉴权头（除登录/注册/公开接口外都必需），每次调用按接口扣额度</td></tr>
+            <tr><td><code>Authorization: Bearer sk-...</code></td><td>MCP Server 鉴权（Streamable HTTP）</td></tr>
+            <tr><td><code>X-Session-Token: ...</code></td><td>网页登录会话 token（/api/auth/login 返回），仅用于用户相关接口</td></tr>
+            <tr><td><code>X-Auth: ...</code></td><td>平台主 PIN（主人通道专用）</td></tr>
+          </tbody></table>
+          <div class="ep-note">错误返回 HTTP 状态码 + JSON <code>{"detail": "原因"}</code>；额度不足返回 402；未授权 401；无权限 403。</div>
+        </div>
+
+        <div class="guide-sec-title" id="api-auth">① 系统与认证</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/ping</span><span class="ep-desc">存活检测（免鉴权）</span></div><div class="codeblock">curl https://YOUR-SERVER:8080/api/ping</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "ts": "..."}</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/status</span><span class="ep-desc">控制台整体状态：MCP 服务在线 / 代理池总数 / 存活池 / 任务数 / 用户数</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/auth/register</span><span class="ep-desc">邮箱注册（免鉴权，注册即送额度）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>email</code><span class="req">必填</span></td><td>string</td><td>邮箱地址</td></tr><tr><td><code>password</code><span class="req">必填</span></td><td>string</td><td>至少 6 位</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/auth/register -H "Content-Type: application/json" -d '{"email":"you@example.com","password":"yourpass123"}'</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"token": "会话token", "user": {"email": "...", "quota": 20}}</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/auth/login</span><span class="ep-desc">邮箱登录（免鉴权）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>account</code><span class="req">必填</span></td><td>string</td><td>邮箱</td></tr><tr><td><code>password</code><span class="req">必填</span></td><td>string</td><td>密码</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/auth/login -H "Content-Type: application/json" -d '{"account":"you@example.com","password":"yourpass123"}'</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/auth/logout</span><span class="ep-desc">退出登录（用 X-Session-Token）</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/auth/logout -H "X-Session-Token: 你的token"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/me</span><span class="ep-desc">当前用户信息 + 近 30 条用量（用 X-Session-Token 或 X-Api-Key）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>最近用量条数，默认 50</td></tr></tbody></table><div class="codeblock">curl -H "X-Session-Token: 你的token" https://YOUR-SERVER:8080/api/me</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/me/password</span><span class="ep-desc">修改密码</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>old</code><span class="req">必填</span></td><td>string</td><td>原密码</td></tr><tr><td><code>new</code><span class="req">必填</span></td><td>string</td><td>新密码 ≥6 位</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/me/apikeys</span><span class="ep-desc">列出我的 API Key（主人通道返回空）</span></div><div class="codeblock">curl -H "X-Session-Token: 你的token" https://YOUR-SERVER:8080/api/me/apikeys</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/me/apikeys</span><span class="ep-desc">创建 API Key</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>Key 名称，默认「默认」</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/me/apikeys -H "X-Session-Token: 你的token" -H "Content-Type: application/json" -d '{"name":"我的爬虫程序"}'</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"key": "sk-xxxxxxxx（只显示一次，请立即保存）"}</div></div><div class="endpoint"><div class="ep-head"><span class="method m-del">DELETE</span><span class="ep-path">/api/me/apikeys/{kid}</span><span class="ep-desc">删除一个 API Key</span></div><div class="codeblock">curl -X DELETE https://YOUR-SERVER:8080/api/me/apikeys/你的keyID -H "X-Session-Token: 你的token"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/me/usage</span><span class="ep-desc">我的用量明细（时间/动作/消耗）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>条数，默认 50</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/stats-public</span><span class="ep-desc">公开统计：用户数 / API 调用数 / Key 数（免鉴权）</span></div><div class="codeblock">curl https://YOUR-SERVER:8080/api/stats-public</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/settings-public</span><span class="ep-desc">公开设置：站点名 / 支付状态 / 客服联系方式（免鉴权）</span></div><div class="codeblock">curl https://YOUR-SERVER:8080/api/settings-public</div></div>
+        <div class="guide-sec-title" id="api-quick">② 快捷抓取（核心）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/mcp/quick</span><span class="ep-desc">一键抓取：等同控制台「快捷任务」。普通抓 / 反爬抓 / 提取元素 / 截图 / 批量，自动编排参数</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>mode</code><span class="req">必填</span></td><td>string</td><td>simple=普通抓取 | stealthy=反爬抓取(穿隐身衣) | extract=按选择器提取 | screenshot=浏览器截图 | make_request=普通HTTP请求 | links=提取页面链接 | bulk=批量普通抓 | bulk_stealthy=批量反爬抓</td></tr><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址（bulk 模式用 urls 字段）</td></tr><tr><td><code>urls</code><span class="req">必填</span></td><td>string</td><td>批量模式：网址列表，逗号或换行分隔</td></tr><tr><td><code>css_selector</code><span class="req">必填</span></td><td>string</td><td>extract 模式必填：CSS 选择器</td></tr><tr><td><code>extraction_type</code><span class="req">必填</span></td><td>string</td><td>markdown(默认)/html/text，透传上游工具</td></tr><tr><td><code>adaptive</code><span class="req">必填</span></td><td>bool</td><td>自适应反爬增强（走容器执行）</td></tr><tr><td><code>use_proxy</code><span class="req">必填</span></td><td>bool</td><td>是否轮换代理池（防风控）</td></tr><tr><td><code>dev_cache</code><span class="req">必填</span></td><td>bool</td><td>开发缓存模式</td></tr></tbody></table><div class="codeblock"># 普通抓取
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"simple","url":"https://example.com"}'
+
+# 反爬抓取（验证码/Cloudflare 盾牌）
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"stealthy","url":"https://example.com","use_proxy":true}'
+
+# 提取商品标题/价格
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"extract","url":"https://example.com/shop","css_selector":".product .title"}'
+
+# 批量抓 5 个页面
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"bulk","urls":"https://a.com/p1,https://a.com/p2,https://a.com/p3"}'
+
+# 浏览器截图
+curl -X POST https://YOUR-SERVER:8080/api/mcp/quick   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"mode":"screenshot","url":"https://example.com"}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "mode": "stealthy",
+  "steps": [{"tool": "stealthy_fetch", "args": {...}}],
+  "result": {"type": "text", "text": "页面内容..."},
+  "status": "done"}</div><div class="ep-note">响应里 result.text 即抓取内容；screenshot 模式 result.type=image，images 为 base64 图。</div></div>
+        <div class="guide-sec-title" id="api-adv">③ 高级工具（上游 Scrapling 能力）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/scrapling/advanced</span><span class="ep-desc">通用入口：按 tool 名调用高级能力（等同控制台「高级工具」页）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tool</code><span class="req">必填</span></td><td>string</td><td>page_markdown | site_markdown | capture_xhr | selector_gen | extract_cli</td></tr><tr><td><code>args</code><span class="req">必填</span></td><td>object</td><td>对应工具的参数字典，见下</td></tr></tbody></table><div class="codeblock"># 网页转 Markdown（喂给 LLM 前不用洗）
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"page_markdown","args":{"url":"https://example.com"}}'
+
+# 整站爬成 Markdown 语料库（默认 20 页）
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"site_markdown","args":{"url":"https://example.com","max_pages":30}}'
+
+# 捕获页面背后所有 XHR/API 接口（不用逆向前端 JS）
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"capture_xhr","args":{"url":"https://example.com"}}'
+
+# 验证选择器是否有效
+curl -X POST https://YOUR-SERVER:8080/api/scrapling/advanced   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"tool":"selector_gen","args":{"url":"https://example.com","css":".price"}}' </div><div class="ep-note">工具参数：page_markdown(url, css_selector) · site_markdown(url, max_pages) · capture_xhr(url, timeout) · selector_gen(url, css/xpath/text 三选一) · extract_cli(url, format=md/txt/html, css_selector, mode=get/fetch/stealthy-fetch, impersonate=chrome)。</div></div>
+        <div class="guide-sec-title" id="api-mcp">④ MCP 代理（把抓取服务当 API 调）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/mcp/tools</span><span class="ep-desc">列出 Scrapling 抓取服务（上游容器）全部工具</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/mcp/tools</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/mcp/call</span><span class="ep-desc">调用任意 Scrapling 工具（fetch / stealthy_fetch / make_request / bulk_get / screenshot / open_session / session_fetch …）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>工具名，先调 /api/mcp/tools 查全量</td></tr><tr><td><code>arguments</code><span class="req">必填</span></td><td>object</td><td>工具参数字典，如 {"url":"https://example.com","timeout":30000}</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/mcp/call   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"name":"stealthy_fetch","arguments":{"url":"https://example.com"}}' </div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/mcp/session/reset</span><span class="ep-desc">重置 MCP 会话（会话异常时用）</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/mcp/session/reset -H "X-Api-Key: sk-你的APIKey"</div></div>
+        <div class="guide-sec-title" id="api-proxy">⑤ 代理池</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies</span><span class="ep-desc">查询代理池列表（约 6000+ 条，来自公开代理源）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>q</code><span class="req">必填</span></td><td>string</td><td>按 IP/端口/协议过滤</td></tr><tr><td><code>source</code><span class="req">必填</span></td><td>string</td><td>按来源过滤</td></tr><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>默认 200</td></tr><tr><td><code>offset</code><span class="req">必填</span></td><td>int</td><td>分页偏移</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies?limit=20&q=1.2"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/sources</span><span class="ep-desc">代理来源列表及各自条数</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxies/sources</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/check</span><span class="ep-desc">并发存活检测（异步），通过的自动写入存活代理池</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>检测前 N 条，默认 100，最多 300</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies/check?limit=100"</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"running": true, "total": 100}  → 用 check/status 轮询结果</div><div class="ep-note">返回 running=true 表示检测进行中；轮询 /api/proxies/check/status 直到 running=false。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/check/status</span><span class="ep-desc">存活检测进度与结果（checked/alive/dead/items）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxies/check/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxies/alive</span><span class="ep-desc">存活代理池（检测通过的代理，代理访问时自动优先）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>默认 200</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxies/alive?limit=50"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxies/alive/remove</span><span class="ep-desc">从存活池移除单条代理</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>ip</code><span class="req">必填</span></td><td>string</td><td>代理 IP</td></tr><tr><td><code>port</code><span class="req">必填</span></td><td>string</td><td>端口</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxies/alive/remove -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" -d '{"ip":"1.1.189.58","port":"8080"}'</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxies/alive/clear</span><span class="ep-desc">清空整个存活代理池</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxies/alive/clear -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxies/refresh</span><span class="ep-desc">重新抓取公开代理源（全量刷新代理池）</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxies/refresh -H "X-Api-Key: sk-你的APIKey"</div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "total": 6200, "sources": 8}</div></div>
+        <div class="guide-sec-title" id="api-visit">⑥ 用代理访问网址（注册防风控核心）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/visit</span><span class="ep-desc">用代理池的 IP 打开一个网址（注册页/目标页），自动防 IP 泄漏</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址，如 https://example.com/register</td></tr><tr><td><code>mode</code><span class="req">必填</span></td><td>string</td><td>plain=纯HTTP请求(最快) | browser=隐身浏览器渲染(推荐注册页) | screenshot=浏览器截图，默认 plain</td></tr><tr><td><code>proxy</code><span class="req">必填</span></td><td>string</td><td>指定代理 ip:port 或 http://ip:port，不填自动从目标可用池→存活池→全池挑选</td></tr><tr><td><code>retries</code><span class="req">必填</span></td><td>int</td><td>失败自动换 IP 重试次数，默认 1，最大 5</td></tr><tr><td><code>timeout</code><span class="req">必填</span></td><td>int</td><td>超时秒数 5-120，默认 30</td></tr></tbody></table><div class="codeblock"># 用代理打开注册页（浏览器隐身模式，自动换 IP 重试）
+curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com/register","mode":"browser","retries":2}'
+
+# 指定一个代理直连
+curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com","mode":"plain","proxy":"1.2.3.4:8080"}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "mode": "browser", "proxy": "http://1.2.3.4:8080",
+  "exit_ip": "6.7.8.9", "ms": 8120, "attempts": 1,
+  "result": {"type": "text", "text": "页面内容..."}}</div><div class="ep-note">exit_ip 保证 ≠ 服务器 IP：检测到透明代理（出口=服务器 IP）会自动丢弃并换下一个，绝不裸奔。screenshot 模式 result.type=image。访问成功会自动回写存活代理池，越用越准。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/records</span><span class="ep-desc">最近的代理访问记录</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tail</code><span class="req">必填</span></td><td>int</td><td>最近 N 条，默认 100</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxy/records?tail=20"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/visit/records/clear</span><span class="ep-desc">清空访问记录</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxy/visit/records/clear -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/proxy/check-target</span><span class="ep-desc">目标站代理体检（异步）：筛出能打开指定网址的代理（注册专用池）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址</td></tr><tr><td><code>limit</code><span class="req">必填</span></td><td>int</td><td>检测前 N 条，默认 100，最多 300</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/proxy/check-target   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"url":"https://example.com/register","limit":200}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"running": true, "total": 200}  → 轮询 check-target/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/check-target/status</span><span class="ep-desc">目标体检进度与结果</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/proxy/check-target/status</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/proxy/target-usable</span><span class="ep-desc">某目标站的可用代理池（体检筛出的）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code><span class="req">必填</span></td><td>string</td><td>目标网址</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/proxy/target-usable?url=https%3A%2F%2Fexample.com"</div></div>
+        <div class="guide-sec-title" id="api-tasks">⑦ 爬虫任务（整站/定时/批量）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks</span><span class="ep-desc">全部爬虫任务列表（状态/已抓条数/日志大小）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/tasks</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks</span><span class="ep-desc">创建爬虫任务（容器隔离执行，可暂停/恢复/断点续爬）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>type</code><span class="req">必填</span></td><td>string</td><td>crawl=全站爬取(默认) | single=单页提取 | sitemap=站点地图 | xml=RSS | csv=CSV Feed | shopify=Shopify 商店产品</td></tr><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>任务名</td></tr><tr><td><code>start_urls</code><span class="req">必填</span></td><td>string</td><td>起始网址，逗号或换行分隔（shopify 可用 target_website）</td></tr><tr><td><code>target_website</code><span class="req">必填</span></td><td>string</td><td>仅 shopify：商店域名</td></tr><tr><td><code>fields</code><span class="req">必填</span></td><td>string</td><td>提取字段，每行「字段名:选择器」如「标题:h1
+价格:.price」</td></tr><tr><td><code>allowed_domains</code><span class="req">必填</span></td><td>string</td><td>允许域名（逗号分隔），不填自动取起始网址域名</td></tr><tr><td><code>crawl_rules</code><span class="req">必填</span></td><td>object/string</td><td>爬取规则 allow 列表</td></tr><tr><td><code>concurrency</code><span class="req">必填</span></td><td>int</td><td>并发数，默认 4</td></tr><tr><td><code>download_delay</code><span class="req">必填</span></td><td>float</td><td>请求间隔秒，默认 0</td></tr><tr><td><code>autothrottle</code><span class="req">必填</span></td><td>bool</td><td>自动限速</td></tr><tr><td><code>robots_txt_obey</code><span class="req">必填</span></td><td>bool</td><td>遵守 robots.txt</td></tr><tr><td><code>adaptive</code><span class="req">必填</span></td><td>bool</td><td>自适应反爬</td></tr><tr><td><code>proxy_rotation</code><span class="req">必填</span></td><td>bool</td><td>轮换代理池</td></tr><tr><td><code>export_format</code><span class="req">必填</span></td><td>string</td><td>jsonl(默认)/csv/json/xml</td></tr></tbody></table><div class="codeblock"># 全站爬取（自动跟随站内链接）
+curl -X POST https://YOUR-SERVER:8080/api/tasks   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"type":"crawl","name":"抓我网站","start_urls":"https://example.com","fields":"标题:h1\n价格:.price","proxy_rotation":true,"export_format":"csv"}'
+
+# 抓 Shopify 商店产品
+curl -X POST https://YOUR-SERVER:8080/api/tasks   -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json"   -d '{"type":"shopify","target_website":"mystore.com"}' </div><div class="codeblock"><span class="cm"># 响应示例</span>
+{"ok": true, "task": {"id": "t260925143000abcd", "name": "...", "status": "created", ...},
+  "script_preview": "spider.py 前 2000 字符"}</div><div class="ep-note">创建后返回任务 ID（tid），用 start 启动。</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}</span><span class="ep-desc">任务详情</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/tasks/t260925143000abcd</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/start</span><span class="ep-desc">启动任务（Docker 容器）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/tasks/t260925143000abcd/start -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/pause</span><span class="ep-desc">暂停运行中的任务（记录断点）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks/{tid}/resume</span><span class="ep-desc">恢复任务（从断点继续）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-del">DELETE</span><span class="ep-path">/api/tasks/{tid}</span><span class="ep-desc">删除任务（停止并清理容器与数据）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr></tbody></table><div class="codeblock">curl -X DELETE https://YOUR-SERVER:8080/api/tasks/t260925143000abcd -H "X-Api-Key: sk-你的APIKey"</div></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}/log</span><span class="ep-desc">任务运行日志</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr><tr><td><code>tail</code><span class="req">必填</span></td><td>int</td><td>最近行数，默认 200</td></tr></tbody></table></div><div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks/{tid}/export</span><span class="ep-desc">导出任务结果（CSV / JSON 下载）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>tid</code><span class="req">必填</span></td><td>string</td><td>任务 ID</td></tr><tr><td><code>format</code><span class="req">必填</span></td><td>string</td><td>csv/json，默认按任务配置</td></tr></tbody></table><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" "https://YOUR-SERVER:8080/api/tasks/t260925143000abcd/export?format=csv" -o result.csv</div></div>
+        <div class="guide-sec-title" id="api-sess">⑧ 会话（保持登录/连续访问）</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/sessions</span><span class="ep-desc">当前打开的浏览器/请求会话列表</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/sessions</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/sessions/{sid}/close</span><span class="ep-desc">关闭一个会话</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>sid</code><span class="req">必填</span></td><td>string</td><td>会话 ID</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/sessions/会话ID/close -H "X-Api-Key: sk-你的APIKey"</div></div>
+        <div class="guide-sec-title" id="api-mcp-tools">MCP Server 工具清单（27 个）</div>
+        <div class="gs-card">
+          <h4><svg class="ic"><use href="#i-robot"/></svg> 接入信息</h4>
+          <div class="codeblock">URL:  <b style="color:var(--accent)">https://YOUR-SERVER:8080/mcp/</b>
+Auth: <b style="color:var(--gold)">Authorization: Bearer sk-你的APIKey</b>
+协议:  Streamable HTTP（先 initialize 握手，走 SSE）</div>
+          <div class="ep-note">连上后 AI Agent 可用自然语言直接调用整个控制台：抓网页 / 反爬 / 用代理访问注册页 / 查代理池 / 建爬虫任务 / 会话管理，每次调用扣额度。</div>
+        </div>
+        <table>
+          <thead><tr><th style="width:24%">工具</th><th>用途</th><th style="width:34%">关键参数</th></tr></thead>
+          <tbody>
+            <tr><td><code>console_status</code></td><td>控制台整体状态（MCP/代理池/任务数）</td><td>—</td></tr>
+            <tr><td><code>scrapling_tools</code></td><td>列出上游 Scrapling 全部抓取工具</td><td>—</td></tr>
+            <tr><td><code>scrapling_call</code></td><td>通用调用上游工具（fetch/stealthy_fetch/make_request…）</td><td>name, arguments(JSON)</td></tr>
+            <tr><td><code>page_markdown</code></td><td>网页转 LLM 就绪 Markdown</td><td>url, css_selector</td></tr>
+            <tr><td><code>site_markdown</code></td><td>整站爬成 Markdown 语料库</td><td>url, max_pages</td></tr>
+            <tr><td><code>capture_xhr</code></td><td>捕获页面背后所有 XHR/API 接口</td><td>url, timeout</td></tr>
+            <tr><td><code>selector_gen</code></td><td>验证/生成 CSS/XPath 选择器</td><td>url, css / xpath / text</td></tr>
+            <tr><td><code>extract_cli</code></td><td>CLI extract 等价：网页提取为 md/txt/html</td><td>url, format, mode, impersonate</td></tr>
+            <tr><td><code>proxy_list</code></td><td>查询代理池</td><td>q, source, limit, offset</td></tr>
+            <tr><td><code>proxy_check_alive</code></td><td>并发存活检测（异步）</td><td>limit</td></tr>
+            <tr><td><code>proxy_check_alive_status</code></td><td>存活检测进度/结果</td><td>—</td></tr>
+            <tr><td><code>proxy_alive_pool</code></td><td>存活代理池（自动优先使用）</td><td>limit</td></tr>
+            <tr><td><code>proxy_alive_remove</code></td><td>移除存活池单条代理</td><td>ip, port</td></tr>
+            <tr><td><code>proxy_alive_clear</code></td><td>清空存活代理池</td><td>—</td></tr>
+            <tr><td><code>proxy_visit</code></td><td>用代理 IP 访问网址（注册防风控核心）</td><td>url, mode, proxy, retries</td></tr>
+            <tr><td><code>proxy_records</code></td><td>最近代理访问记录</td><td>tail</td></tr>
+            <tr><td><code>proxy_check_target</code></td><td>目标站代理体检（筛注册可用池）</td><td>url, limit</td></tr>
+            <tr><td><code>proxy_check_target_status</code></td><td>目标体检进度</td><td>—</td></tr>
+            <tr><td><code>proxy_target_usable</code></td><td>某目标站可用代理池</td><td>url</td></tr>
+            <tr><td><code>tasks_list</code></td><td>爬虫任务列表</td><td>—</td></tr>
+            <tr><td><code>task_create</code></td><td>创建爬虫任务</td><td>type, start_urls, fields, proxy_rotation…</td></tr>
+            <tr><td><code>task_start</code></td><td>启动任务</td><td>tid</td></tr>
+            <tr><td><code>task_pause</code></td><td>暂停任务（记断点）</td><td>tid</td></tr>
+            <tr><td><code>task_resume</code></td><td>恢复任务</td><td>tid</td></tr>
+            <tr><td><code>task_log</code></td><td>任务运行日志</td><td>tid, lines</td></tr>
+            <tr><td><code>sessions_list</code></td><td>当前会话列表</td><td>—</td></tr>
+            <tr><td><code>session_close</code></td><td>关闭会话</td><td>sid</td></tr>
+          </tbody>
+        </table>
+        <div class="ep-note" style="margin-top:10px">以上 27 个 MCP 工具全部由平台托管，客户端配置见上方「MCP Server 接入」。REST 与 MCP 共用同一份 API Key 与额度池。</div>
+      </div>
+
+  </section>
+
+
+  <!-- ================= 额度与购买 ================= -->
+  <section id="sec-quota" class="hidden">
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-card"/></svg> 我的额度</h2>
+      <div class="grid">
+        <div class="stat"><div class="k">剩余额度</div><div class="v gold" id="qQuota">—</div></div>
+        <div class="stat"><div class="k">累计购买</div><div class="v" id="qTotal">—</div></div>
+        <div class="stat"><div class="k">已消耗</div><div class="v" id="qUsed">—</div></div>
+        <div class="stat"><div class="k">API Key 数</div><div class="v" id="qKeys">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-cart"/></svg> 购买额度<small>支付接口未开通时，购买按钮自动变为「联系客服」</small></h2>
+      <div id="quotaBuyBox"></div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-file-text"/></svg> 用量记录</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>时间</th><th>动作</th><th>消耗</th></tr></thead>
+          <tbody id="quotaUsage"><tr><td colspan="3" style="color:var(--muted)">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ================= 管理后台（admin） ================= -->
+  <section id="sec-admin" class="hidden">
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-chart"/></svg> 平台统计</h2>
+      <div class="grid" id="adminStats"></div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-users"/></svg> 用户管理<small>查看用户 / 充值额度 / 禁用 / 改角色 / 手动开号</small>
+        <button class="btn green" style="margin-left:auto" onclick="adminAddUser()">＋ 手动开号</button>
+      </h2>
+      <div class="msg" id="adminUsersMsg"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>用户名</th><th>角色</th><th>剩余额度</th><th>累计</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead>
+          <tbody id="adminUsersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-settings"/></svg> 站点设置<small>支付开关 / 客服 / 试用额度 / 价格 / 公告 —— 保存后立即生效</small></h2>
+      <div id="adminSettings"></div>
+      <div class="msg" id="adminSetMsg"></div>
+      <button class="btn" onclick="adminSaveSettings()">保存设置</button>
+    </div>
+  </section>
+
+  </div>
+</div>
+<script>
+const IC=(n,s=15)=>`<svg class="ic" style="width:${s}px;height:${s}px;vertical-align:-2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-${n}"/></svg>`;
+
+
+const API = "/api";
+let PIN = localStorage.getItem("scrapling_pin") || "";
+let SESSION = localStorage.getItem("scrapling_session") || "";
+let ME = null;
+let PUB = null;
+let cur = 0, PAGE = 200;
+let tools = [];
+let activeTool = null;
+
+async function req(path, opts = {}) {
+  const headers = { ...(opts.headers || {}), "Content-Type": "application/json" };
+  if (SESSION) headers["X-Session-Token"] = SESSION;
+  else if (PIN) headers["X-Auth"] = PIN;
+  const r = await fetch(API + path, { ...opts, headers });
+  if (r.status === 401) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || "未授权，请登录"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || "请求失败");
+  return data;
+}
+
+function doLogin() { doAuth(); }
+function logout() { SESSION = ""; localStorage.removeItem("scrapling_session"); ME = null; showLanding(); }
+function updateLandingAuth() {
+  const logged = !!(SESSION && ME);
+  const set = (el, html, fn) => { if (!el) return; el.innerHTML = html; el.onclick = fn; };
+  const link = (el, txt, fn) => { if (!el) return; el.textContent = txt; el.onclick = fn; };
+  if (logged) {
+    link(document.getElementById("lNavLogin"), ME.username, () => enterApp());
+    set(document.getElementById("lNavCta"), IC("rocket") + " 进入控制台", () => enterApp());
+    set(document.getElementById("lHeroCta"), IC("rocket") + " 进入控制台", () => enterApp());
+    link(document.getElementById("lHeroGhost"), "进入控制台", () => enterApp());
+    set(document.getElementById("lCtaBtn"), IC("rocket") + " 进入控制台", () => enterApp());
+  } else {
+    link(document.getElementById("lNavLogin"), "登录", () => showAuth());
+    set(document.getElementById("lNavCta"), "免费开始", () => showAuth());
+    set(document.getElementById("lHeroCta"), IC("rocket") + " 免费开始抓取", () => showAuth());
+    link(document.getElementById("lHeroGhost"), "查看控制台", () => showAuth());
+    set(document.getElementById("lCtaBtn"), IC("rocket") + " 免费开始", () => showAuth());
+  }
+}
+function toggleDrawer(){document.body.classList.toggle("drawer-open")}
+function closeDrawer(){document.body.classList.remove("drawer-open")}
+function showLogin() { showAuth("login"); }
+function showLanding() {
+  updateLandingAuth();
+  document.getElementById("landing").classList.remove("hidden");
+  document.getElementById("authPage").classList.add("hidden");
+  document.getElementById("app").classList.add("hidden");
+  loadPub();
+  loadMetrics();
+  startTerm();
+}
+function showAuth(mode) {
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("authPage").classList.remove("hidden");
+  document.getElementById("app").classList.add("hidden");
+  const isReg = mode === "register";
+  document.getElementById("authTitle").textContent = isReg ? "邮箱注册" : "登录";
+  document.getElementById("authSub").textContent = isReg ? "用邮箱注册，即送免费抓取额度" : "欢迎回来，继续你的抓取任务";
+  document.getElementById("authBtn").textContent = isReg ? "注册并进入" : "登录";
+  document.getElementById("authSwitch").innerHTML = isReg ? '已有账号？<a onclick="toggleAuth()">直接登录</a>' : '还没有账号？<a onclick="toggleAuth()">邮箱注册</a>';
+  document.getElementById("authErr").style.display = "none";
+}
+function toggleAuth() {
+  const isReg = document.getElementById("authTitle").textContent === "邮箱注册";
+  showAuth(isReg ? "login" : "register");
+}
+async function doAuth() {
+  const email = document.getElementById("authUser").value.trim();
+  const password = document.getElementById("authPass").value;
+  const isReg = document.getElementById("authTitle").textContent === "邮箱注册";
+  const err = document.getElementById("authErr");
+  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) { err.textContent = "请输入有效的邮箱地址"; err.style.display = "block"; return; }
+  if (password.length < 6) { err.textContent = "密码至少 6 位"; err.style.display = "block"; return; }
+  const btn = document.getElementById("authBtn");
+  btn.disabled = true; btn.textContent = "处理中…";
+  try {
+    const d = await req("/auth/" + (isReg ? "register" : "login"), { method: "POST", body: JSON.stringify({ email, password }) });
+    SESSION = d.token;
+    localStorage.setItem("scrapling_session", SESSION);
+    ME = d.user;
+    enterApp();
+  } catch (e) {
+    err.textContent = e.message; err.style.display = "block";
+    btn.disabled = false; btn.textContent = isReg ? "注册并进入" : "登录";
+  }
+}
+async function enterApp() {
+  updateLandingAuth();
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("authPage").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  try { await loadMe(); } catch (e) { showLanding(); return; }
+  switchTab("overview");
+  loadTools(); loadStatus(); loadSessions(); loadSources();
+}
+async function loadMe() {
+  const d = await req("/me");
+  ME = d.user;
+  const who = ME.master ? "主人通道" : ME.username;
+  document.getElementById("sideUser").textContent = who;
+  document.getElementById("topUser").textContent = who;
+  document.getElementById("sideQuota").textContent = ME.master ? "∞" : ME.quota;
+  document.getElementById("topQuota").textContent = ME.master ? "∞" : ME.quota;
+  document.getElementById("navAdmin").classList.toggle("hidden", !(ME.role === "admin" || ME.master));
+  const ann = document.getElementById("annBar");
+  if (PUB && PUB.announcement) { ann.innerHTML = IC('megaphone') + " " + escapeHtml(PUB.announcement); ann.classList.remove("hidden"); } else ann.classList.add("hidden");
+}
+
+function switchTab(t) {
+  closeDrawer();
+  document.querySelectorAll(".side .nav-item").forEach(b => b.classList.remove("active"));
+  const navEl = document.getElementById("nav" + (t[0].toUpperCase() + t.slice(1)));
+  if (navEl) navEl.classList.add("active");
+  const secs = ["overview", "tools", "advanced", "proxy", "tasks", "guide", "api", "quota", "status", "admin"];
+  secs.forEach(s => document.getElementById("sec-" + s).classList.add("hidden"));
+  document.getElementById("sec-" + t).classList.remove("hidden");
+  const titles = { overview: "概览", tools: "抓取工具", advanced: "高级工具", proxy: "代理池 / 访问", tasks: "爬虫任务", guide: "教程", api: "API 接入", quota: "额度与购买", status: "服务状态", admin: "管理后台" };
+  document.getElementById("pageTitle").textContent = titles[t] || "控制台";
+  if (t === "overview") loadOverview();
+  if (t === "tools") { loadTools(); loadSessions(); }
+  if (t === "proxy") { loadProxies(0); loadProxyRecords(); loadAlive(); }
+  if (t === "tasks") loadTasks();
+  if (t === "status") loadStatus();
+  if (t === "api") loadApiKeys();
+  if (t === "quota") loadQuota();
+  if (t === "admin") adminLoad();
+}
+
+/* ---------- 快捷任务 ---------- */
+function quickModeChanged() {
+  const m = document.getElementById("quickMode").value;
+  document.getElementById("quickCss").style.display = (m === "extract" || m === "links") ? "" : "none";
+  document.getElementById("quickUrls").style.display = (m === "bulk") ? "" : "none";
+  document.getElementById("quickMethod").style.display = (m === "make_request") ? "" : "none";
+}
+function renderResult(el, data) {
+  el.classList.remove("hidden");
+  if (data.type === "image") {
+    let html = "";
+    (data.images || []).forEach(src => { html += `<img src="${src}" style="max-width:100%;border-radius:8px;margin:6px 0">`; });
+    if (data.text) html += `<div style="color:var(--muted);font-size:12px;margin-top:8px">${escapeHtml(data.text)}</div>`;
+    el.innerHTML = html;
+  } else if (data.type === "error") {
+    el.innerHTML = `<span style="color:var(--danger)">${escapeHtml(data.text)}</span>`;
+  } else {
+    el.textContent = data.text || "(无输出)";
+  }
+}
+function escapeHtml(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+async function quickRun() {
+  const url = document.getElementById("quickUrl").value.trim();
+  const mode = document.getElementById("quickMode").value;
+  const btn = document.getElementById("quickBtn");
+  const msg = document.getElementById("quickMsg");
+  const el = document.getElementById("quickResult");
+  if (!url && mode !== "bulk") { msg.textContent = "请先输入 URL"; return; }
+  const body = {
+    mode,
+    url,
+    css_selector: document.getElementById("quickCss").value.trim(),
+    urls: document.getElementById("quickUrls").value.trim(),
+    method: document.getElementById("quickMethod").value,
+    adaptive: document.getElementById("quickAdaptive").checked,
+    use_proxy: document.getElementById("quickProxy").checked,
+    dev_cache: document.getElementById("quickCache").checked,
+  };
+  btn.disabled = true; btn.textContent = "执行中...（可能需 10-60 秒）";
+  msg.textContent = "";
+  el.classList.add("hidden");
+  try {
+    const data = await req("/mcp/quick", { method: "POST", body: JSON.stringify(body) });
+    const steps = (data.steps || []).map(s => s.tool).join(" → ");
+    msg.innerHTML = `${IC('check')} 完成，编排步骤：<b style="color:var(--accent)">${steps}</b>`;
+    renderResult(el, data.result);
+  } catch (e) {
+    msg.innerHTML = IC('x') + " " + escapeHtml(e.message);
+  }
+  btn.disabled = false; btn.innerHTML = IC('rocket') + " 一键抓取";
+}
+
+/* ---------- MCP 工具台 ---------- */
+async function loadTools() {
+  try {
+    const data = await req("/mcp/tools");
+    tools = data.tools || [];
+    const el = document.getElementById("toolList");
+    if (!tools.length) { el.innerHTML = '<span style="color:var(--muted)">无工具（MCP 服务可能未就绪）</span>'; return; }
+    el.innerHTML = tools.map((t, i) => `<div class="tool-chip ${i === 0 ? 'active' : ''}" onclick="selectTool(${i})">${t.name}</div>`).join("");
+    selectTool(0);
+  } catch (e) {
+    document.getElementById("toolList").innerHTML = `<span style="color:var(--danger)">加载失败: ${e.message}</span>`;
+  }
+}
+function selectTool(i) {
+  activeTool = tools[i];
+  document.querySelectorAll(".tool-chip").forEach((c, j) => c.classList.toggle("active", j === i));
+  document.getElementById("toolDesc").textContent = activeTool.description || "";
+  const schema = (activeTool.inputSchema && activeTool.inputSchema.properties) || {};
+  const required = (activeTool.inputSchema && activeTool.inputSchema.required) || [];
+  const form = document.getElementById("toolForm");
+  const keys = Object.keys(schema);
+  // 常用参数放前面：url / urls / session_id / method / extraction_type / css_selector
+  const prio = ["url", "urls", "session_id", "method", "extraction_type", "css_selector", "query", "params", "data", "json"];
+  keys.sort((a, b) => {
+    const ia = prio.indexOf(a), ib = prio.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  if (!keys.length) {
+    form.innerHTML = '<div class="msg">该工具无需参数</div>';
+    document.getElementById("callBtn").style.display = "inline-block";
+    return;
+  }
+  form.innerHTML = keys.map(k => {
+    const s = schema[k];
+    const reqMark = required.includes(k) ? '<em>*</em>' : '';
+    const def = s.default !== undefined ? s.default : "";
+    const defStr = def === null ? "" : String(def);
+    if (s.enum && s.enum.length) {
+      const opts = s.enum.map(v => `<option value="${v}" ${String(v) === defStr ? "selected" : ""}>${v}</option>`).join("");
+      return `<div class="arg-row"><label>${k} ${reqMark}</label><select data-k="${k}">${opts}</select></div>`;
+    }
+    if (s.type === "boolean") {
+      return `<div class="arg-row"><label>${k} ${reqMark}</label><select data-k="${k}"><option value="true" ${def === true ? "selected" : ""}>true</option><option value="false" ${def === false ? "selected" : ""}>false</option></select></div>`;
+    }
+    if (s.type === "object" || s.type === "array") {
+      const dv = defStr ? defStr : (s.type === "array" ? '[""]' : "{}");
+      return `<div class="arg-row"><label>${k} ${reqMark}</label><textarea data-k="${k}" placeholder="JSON 格式${s.description ? '：' + s.description : ''}">${dv}</textarea></div>`;
+    }
+    return `<div class="arg-row"><label>${k} ${reqMark}</label><input data-k="${k}" value="${escapeHtml(defStr)}" placeholder="${(s.description || '').replace(/"/g, "&quot;")}"></div>`;
+  }).join("");
+  document.getElementById("callBtn").style.display = "inline-block";
+}
+async function callTool() {
+  if (!activeTool) return;
+  const arguments = {};
+  document.querySelectorAll("#toolForm [data-k]").forEach(el => {
+    const k = el.dataset.k;
+    const s = (activeTool.inputSchema.properties || {})[k] || {};
+    let v = el.value.trim();
+    if (s.type === "boolean") { v = v === "true"; }
+    else if (s.type === "object" || s.type === "array") { try { v = JSON.parse(v); } catch { } }
+    else if (s.type === "number" || s.type === "integer") { const n = Number(v); if (!isNaN(n)) v = n; }
+    arguments[k] = v;
+  });
+  const btn = document.getElementById("callBtn");
+  btn.disabled = true; btn.textContent = "调用中...";
+  const resEl = document.getElementById("toolResult");
+  resEl.classList.remove("hidden");
+  resEl.textContent = "正在调用 " + activeTool.name + " ...（长任务可能需数十秒）";
+  try {
+    const data = await req("/mcp/call", { method: "POST", body: JSON.stringify({ name: activeTool.name, arguments }) });
+    const result = data.result || {};
+    if (result.isError) {
+      resEl.classList.remove("hidden");
+      resEl.innerHTML = `<span style="color:var(--danger)">${IC('x')} 工具执行出错:</span>\n` + escapeHtml(JSON.stringify(result, null, 2));
+    } else {
+      const content = (result.content || []);
+      const images = content.filter(c => c.type === "image").map(c => `data:${c.mimeType || "image/png"};base64,${c.data}`);
+      const texts = content.filter(c => c.type === "text" && c.text).map(c => c.text);
+      resEl.classList.remove("hidden");
+      if (images.length) {
+        resEl.innerHTML = images.map(src => `<img src="${src}" style="max-width:100%;border-radius:8px;margin:6px 0">`).join("") +
+          (texts.length ? `<div style="color:var(--muted);font-size:12px;margin-top:8px">${escapeHtml(texts.join("\n"))}</div>` : "");
+      } else {
+        resEl.textContent = texts.join("\n") || JSON.stringify(result, null, 2);
+      }
+    }
+  } catch (e) {
+    resEl.classList.remove("hidden");
+    resEl.innerHTML = `<span style="color:var(--danger)">${IC('x')} ${escapeHtml(e.message)}</span>`;
+  }
+  btn.disabled = false; btn.textContent = "调用工具";
+}
+
+/* ---------- 代理池 ---------- */
+async function loadProxies(page) {
+  cur = page;
+  const q = document.getElementById("proxySearch").value;
+  const src = document.getElementById("proxySource").value;
+  try {
+    const data = await req(`/proxies?q=${encodeURIComponent(q)}&source=${encodeURIComponent(src)}&limit=${PAGE}&offset=${cur * PAGE}`);
+    document.getElementById("proxyTotal").textContent = `共 ${data.total} 条`;
+    document.getElementById("pageInfo").textContent = `${cur + 1} / ${Math.max(1, Math.ceil(data.total / PAGE))} 页`;
+    document.getElementById("prevBtn").disabled = cur === 0;
+    document.getElementById("nextBtn").disabled = (cur + 1) * PAGE >= data.total;
+    const body = document.getElementById("proxyBody");
+    if (!data.items.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">无数据</td></tr>'; return; }
+    body.innerHTML = data.items.map(p => {
+      const st = p._alive === undefined ? "" : p._alive ? '<span class="tag alive">存活</span>' : '<span class="tag dead">失效</span>';
+      const ms = p._ms ? ` ${p._ms}ms` : "";
+      return `<tr><td>${p.ip}</td><td>${p.port}</td><td>${p.protocol || "http"}</td><td><span class="tag src">${p.source || "?"}</span></td><td>${st}</td><td>${ms}</td></tr>`;
+    }).join("");
+  } catch (e) { document.getElementById("proxyMsg").textContent = "加载失败: " + e.message; }
+}
+async function checkAlive() {
+  const btn = document.getElementById("checkBtn");
+  btn.disabled = true; btn.textContent = "检测中...";
+  document.getElementById("proxyMsg").innerHTML = '<span class="spin"></span> 存活检测进行中（默认检测前 100 条，约需 10-60 秒）';
+  document.getElementById("aliveCheckBtn").disabled = true; document.getElementById("aliveCheckBtn").textContent = "检测中...";
+  try {
+    const data = await req("/proxies/check?limit=100");
+    if (data.running) pollCheck();
+  } catch (e) {
+    document.getElementById("proxyMsg").textContent = "检测失败: " + e.message;
+    btn.disabled = false; btn.textContent = "存活检测";
+  }
+}
+async function pollCheck() {
+  const btn = document.getElementById("checkBtn");
+  try {
+    const data = await req("/proxies/check/status");
+    if (data.running) {
+      document.getElementById("proxyMsg").innerHTML = `<span class="spin"></span> 检测中 ${data.progress.done}/${data.progress.total}，存活 ${data.progress.ok}`;
+      setTimeout(pollCheck, 1500);
+    } else if (data.result) {
+      btn.disabled = false; btn.textContent = "存活检测";
+      const r = data.result;
+      document.getElementById("proxyMsg").innerHTML = `检测完成：存活 <b style="color:var(--accent2)">${r.alive}</b> / ${r.checked}，已自动存入「存活代理池」`;
+      document.getElementById("aliveCheckBtn").disabled = false; document.getElementById("aliveCheckBtn").innerHTML = IC('refresh') + " 重新检测";
+      renderCheckResult(r.items);
+      loadAlive();
+    }
+  } catch (e) { btn.disabled = false; btn.textContent = "存活检测"; }
+}
+function renderCheckResult(items) {
+  const body = document.getElementById("proxyBody");
+  if (!items.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">无存活代理</td></tr>'; return; }
+  body.innerHTML = items.map(p => {
+    const tag = p.alive ? '<span class="tag alive">存活</span>' : '<span class="tag dead">失效</span>';
+    return `<tr><td>${p.ip}</td><td>${p.port}</td><td>${p.protocol}</td><td><span class="tag src">${p.source}</span></td><td>${tag}</td><td>${p.ms || ""}</td></tr>`;
+  }).join("");
+}
+/* ---------- 存活代理池 ---------- */
+async function loadAlive() {
+  const body = document.getElementById("aliveBody");
+  try {
+    const data = await req("/proxies/alive");
+    if (!data.items || !data.items.length) {
+      body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">暂无存活代理：点「重新检测」跑一次存活检测，通过的全自动入库</td></tr>';
+      document.getElementById("aliveMsg").innerHTML = data.updated_at ? `上次检测：${data.updated_at}，当前 0 条存活` : "还没有存活代理";
+      return;
+    }
+    document.getElementById("aliveMsg").innerHTML = `共 <b style="color:var(--accent2)">${data.total}</b> 条存活（检测于 ${data.updated_at || "?"}），访问时自动优先使用`;
+    body.innerHTML = data.items.map(p => {
+      const ms = p.ms ? `${p.ms}ms` : "-";
+      const exit = p.exit_ip || "-";
+      const ops = `<button class="btn" style="padding:3px 10px;font-size:12px" onclick="useAlive('${p.ip}:${p.port}')">填入</button> <button class="btn gray" style="padding:3px 10px;font-size:12px" onclick="removeAlive('${p.ip}','${p.port}')">移除</button>`;
+      return `<tr><td>${p.ip}</td><td>${p.port}</td><td>${p.protocol || "http"}</td><td>${ms}</td><td>${exit}</td><td>${p.checked_at || "-"}</td><td>${ops}</td></tr>`;
+    }).join("");
+  } catch (e) { body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">加载失败</td></tr>'; }
+}
+function useAlive(pp) {
+  document.getElementById("pvProxy").value = pp;
+  document.getElementById("pvMsg").innerHTML = `${IC('check')} 已填入存活代理 <b style="color:var(--accent)">${pp}</b>，去上面「用代理打开网址」点「用代理访问」`;
+}
+async function removeAlive(ip, port) {
+  try { await req("/proxies/alive/remove", { method: "POST", body: JSON.stringify({ ip, port }) }); loadAlive(); }
+  catch (e) { document.getElementById("aliveMsg").textContent = "移除失败: " + e.message; }
+}
+async function clearAlive() {
+  if (!confirm("确定清空整个存活代理池？")) return;
+  try { await req("/proxies/alive/clear", { method: "POST", body: "{}" }); loadAlive(); }
+  catch (e) { document.getElementById("aliveMsg").textContent = "清空失败: " + e.message; }
+}
+async function refreshProxies() {
+  document.getElementById("proxyMsg").innerHTML = '<span class="spin"></span> 后台爬取已启动，约 30-60 秒后刷新';
+  try { await req("/proxies/refresh", { method: "POST", body: "{}" }); } catch (e) { document.getElementById("proxyMsg").textContent = e.message; }
+}
+async function loadSources() {
+  try {
+    const data = await req("/proxies/sources");
+    const sel = document.getElementById("proxySource");
+    sel.innerHTML = '<option value="">全部来源</option>' + data.sources.map(s => `<option value="${s}">${s}</option>`).join("");
+  } catch (e) {}
+}
+
+/* ---------- 用代理打开网址 ---------- */
+const PV_MODES = { plain: "普通请求", browser: "浏览器渲染", screenshot: "网页截图" };
+async function proxyVisit(retry) {
+  const url = document.getElementById("pvUrl").value.trim();
+  if (!url) { document.getElementById("pvMsg").textContent = "请先输入网址"; return; }
+  const btn = document.getElementById("pvBtn");
+  btn.disabled = true; btn.textContent = "代理访问中...（开浏览器需 10-40 秒）";
+  document.getElementById("pvMsg").innerHTML = '<span class="spin"></span> 正在用代理访问，请稍候...';
+  document.getElementById("pvResult").classList.add("hidden");
+  const body = {
+    url,
+    mode: document.getElementById("pvMode").value,
+    proxy: document.getElementById("pvProxy").value.trim(),
+    retries: parseInt(document.getElementById("pvRetries").value || "1", 10),
+  };
+  try {
+    const data = await req("/proxy/visit", { method: "POST", body: JSON.stringify(body) });
+    const exitInfo = data.exit_ip ? `，出口 IP <b style="color:var(--accent2)">${data.exit_ip}</b>` : "（出口 IP 未测到，代理可能未生效）";
+    document.getElementById("pvMeta").innerHTML =
+      `<span>${IC('check')} 访问成功</span><span>代理: <b style="color:var(--accent)">${data.proxy}</b></span>` +
+      `<span>出口 IP: <b style="color:var(--accent2)">${data.exit_ip || "?"}</b></span>` +
+      `<span>耗时: ${data.ms}ms</span><span>尝试: ${data.attempts} 次</span>`;
+    document.getElementById("pvResult").classList.remove("hidden");
+    document.getElementById("pvMsg").innerHTML = "";
+    renderProxyResult(data.result);
+    loadProxyRecords();
+  } catch (e) {
+    document.getElementById("pvMsg").innerHTML = IC('x') + " " + escapeHtml(e.message);
+    loadProxyRecords();
+  }
+  btn.disabled = false; btn.innerHTML = IC('rocket') + " 用代理访问";
+}
+function renderProxyResult(result) {
+  const el = document.getElementById("pvBody");
+  if (!result) { el.innerHTML = '<div style="color:var(--muted)">(无输出)</div>'; return; }
+  if (result.type === "image") {
+    let html = "";
+    (result.images || []).forEach(src => { html += `<img src="${src}" style="max-width:100%;border-radius:8px;margin:6px 0">`; });
+    if (result.text) html += `<div style="color:var(--muted);font-size:12px;margin-top:8px">${escapeHtml(result.text)}</div>`;
+    el.innerHTML = html;
+  } else if (result.type === "error") {
+    el.innerHTML = `<span style="color:var(--danger)">${escapeHtml(result.text)}</span>`;
+  } else {
+    el.innerHTML = `<pre class="result" style="margin-top:0">${escapeHtml((result.text || "(无输出)").slice(0, 20000))}</pre>`;
+  }
+}
+
+/* ---------- 目标站代理体检 ---------- */
+async function startTargetCheck() {
+  const url = document.getElementById("ctUrl").value.trim();
+  if (!url) { document.getElementById("ctMsg").textContent = "请填写目标网址"; return; }
+  const btn = document.getElementById("ctBtn");
+  btn.disabled = true; btn.textContent = "体检中...";
+  document.getElementById("ctResult").classList.add("hidden");
+  document.getElementById("ctMsg").innerHTML = '<span class="spin"></span> 体检启动中...';
+  try {
+    const data = await req("/proxy/check-target", { method: "POST", body: JSON.stringify({ url, limit: parseInt(document.getElementById("ctLimit").value || "100", 10) }) });
+    if (data.running) pollTargetCheck();
+  } catch (e) {
+    document.getElementById("ctMsg").innerHTML = IC('x') + " " + escapeHtml(e.message);
+    btn.disabled = false; btn.innerHTML = IC('search') + " 开始体检";
+  }
+}
+async function pollTargetCheck() {
+  const btn = document.getElementById("ctBtn");
+  try {
+    const data = await req("/proxy/check-target/status");
+    if (data.running) {
+      document.getElementById("ctMsg").innerHTML = `<span class="spin"></span> 体检中 ${data.progress.done}/${data.progress.total}，能打开目标站的 <b style="color:var(--accent2)">${data.progress.ok}</b> 条`;
+      setTimeout(pollTargetCheck, 1500);
+    } else if (data.result) {
+      btn.disabled = false; btn.innerHTML = IC('search') + " 开始体检";
+      const r = data.result;
+      document.getElementById("ctMsg").innerHTML = `${IC('check')} 体检完成：能打开 <b style="color:var(--accent2)">${r.ok}</b> / ${r.checked} 条，已存入「该站可用池」`;
+      renderTargetResult(r.items);
+    }
+  } catch (e) { btn.disabled = false; btn.innerHTML = IC('search') + " 开始体检"; }
+}
+function renderTargetResult(items) {
+  const body = document.getElementById("ctBody");
+  document.getElementById("ctResult").classList.remove("hidden");
+  if (!items.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">暂无结果</td></tr>'; return; }
+  body.innerHTML = items.map(p => {
+    const tag = p.ok ? '<span class="tag alive">可用</span>' : p.reachable ? '<span class="tag" style="background:rgba(255,180,84,.15);color:var(--warn)">可达但被拒</span>' : '<span class="tag dead">打不开</span>';
+    const useBtn = p.ok ? `<button class="btn" style="padding:3px 10px;font-size:12px" onclick="useThisProxy('${p.ip}:${p.port}')">填入</button>` : "";
+    return `<tr><td>${p.ip}</td><td>${p.port}</td><td>${p.protocol}</td><td>${p.code || "-"}</td><td>${tag}</td><td>${p.ms || "-"}</td><td>${useBtn}</td></tr>`;
+  }).join("");
+}
+function useThisProxy(pp) {
+  document.getElementById("pvProxy").value = pp;
+  document.getElementById("pvMsg").innerHTML = `${IC('check')} 已填入代理 <b style="color:var(--accent)">${pp}</b>，去上面「用代理打开网址」点「用代理访问」`;
+  document.getElementById("pvUrl").value = document.getElementById("ctUrl").value.trim();
+}
+async function loadTargetUsable() {
+  const url = document.getElementById("ctUrl").value.trim();
+  const msg = document.getElementById("ctMsg");
+  try {
+    const data = await req("/proxy/target-usable" + (url ? `?url=${encodeURIComponent(url)}` : ""));
+    if (!data.items || !data.items.length) { msg.textContent = "还没有已检测的可用池，先在上面做一次「目标站代理体检」"; return; }
+    msg.innerHTML = `${IC('box')} 目标站 <b style="color:var(--accent)">${data.url || "?"}</b> 的可用代理池：${data.items.length} 条（检测于 ${data.checked_at || "?"}）`;
+    renderTargetResult(data.items);
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+
+/* ---------- 代理访问记录 ---------- */
+async function loadProxyRecords() {
+  const body = document.getElementById("pvRecords");
+  try {
+    const data = await req("/proxy/records?tail=50");
+    const recs = data.records || [];
+    if (!recs.length) { body.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">暂无记录</td></tr>'; return; }
+    body.innerHTML = recs.map(r => {
+      const st = r.ok ? '<span class="tag alive">成功</span>' : `<span class="tag dead" title="${escapeHtml(r.error || "")}">失败</span>`;
+      const mode = PV_MODES[r.mode] || r.mode;
+      return `<tr><td style="font-size:12px;color:var(--muted)">${r.ts}</td><td style="max-width:260px;word-break:break-all">${escapeHtml(r.url)}</td><td>${mode}</td><td style="font-family:monospace;font-size:12px">${escapeHtml(r.proxy || "")}</td><td>${r.exit_ip || "-"}</td><td>${st}</td><td>${r.ms ? r.ms + "ms" : "-"}</td></tr>`;
+    }).join("");
+  } catch (e) { body.innerHTML = `<tr><td colspan="7" style="color:var(--danger)">加载失败: ${escapeHtml(e.message)}</td></tr>`; }
+}
+async function clearRecords() {
+  try { await req("/proxy/visit/records/clear", { method: "POST", body: "{}" }); loadProxyRecords(); }
+  catch (e) { alert("清空失败: " + e.message); }
+}
+
+/* ---------- 服务状态 ---------- */
+async function loadStatus() {
+  try {
+    const d = await req("/status");
+    const grid = document.getElementById("statGrid");
+    grid.innerHTML = `
+      <div class="stat"><div class="k">MCP 服务</div><div class="v ${d.mcp.ok ? 'green' : 'red'}">${d.mcp.ok ? '在线' : '离线'}</div></div>
+      <div class="stat"><div class="k">MCP 工具数</div><div class="v blue">${d.mcp.tools}</div></div>
+      <div class="stat"><div class="k">代理池数量</div><div class="v">${d.proxies}</div></div>`;
+    const sys = d.system || {};
+    document.getElementById("sysRow").innerHTML = `
+      <span>内存: <b>${sys.mem || "?"}</b></span>
+      <span>磁盘: <b>${sys.disk || "?"}</b></span>
+      <span>运行时长: <b>${sys.uptime || "?"}</b></span>`;
+  } catch (e) {}
+}
+
+/* ---------- 爬虫任务 ---------- */
+function taskTypeChanged() {
+  const t = document.getElementById("taskType").value;
+  document.getElementById("rowShopify").style.display = t === "shopify" ? "" : "none";
+  document.getElementById("rowCrawlRules").style.display = t === "crawl" ? "" : "none";
+  document.getElementById("rowItertag").style.display = t === "xml" ? "" : "none";
+  document.getElementById("rowCsvHeaders").style.display = t === "csv" ? "" : "none";
+  document.getElementById("taskWebsite").value = document.getElementById("taskWebsite").value;
+}
+async function createTask() {
+  const msg = document.getElementById("taskMsg");
+  const btn = [...document.querySelectorAll(".toolbar button")].find(b => b.textContent.includes("创建任务"));
+  const type = document.getElementById("taskType").value;
+  const urls = document.getElementById("taskUrls").value.trim();
+  const website = document.getElementById("taskWebsite").value.trim();
+  if (!urls && !(type === "shopify" && website)) { msg.textContent = "请填写起始 URL"; return; }
+  const body = {
+    name: document.getElementById("taskName").value.trim(),
+    type,
+    start_urls: urls,
+    target_website: website,
+    fields: document.getElementById("taskFields").value.trim(),
+    crawl_rules: document.getElementById("taskRules").value.trim(),
+    itertag: document.getElementById("taskItertag").value.trim(),
+    csv_headers: document.getElementById("taskCsvHeaders").value.trim(),
+    concurrency: document.getElementById("taskConcurrency").value,
+    download_delay: document.getElementById("taskDelay").value,
+    adaptive: document.getElementById("taskAdaptive").checked,
+    proxy_rotation: document.getElementById("taskProxy").checked,
+    autothrottle: document.getElementById("taskAutothrottle").checked,
+    robots_txt_obey: document.getElementById("taskRobots").checked,
+    development_mode: document.getElementById("taskDevCache").checked,
+    export_format: document.getElementById("taskExport").value,
+  };
+  try {
+    const data = await req("/tasks", { method: "POST", body: JSON.stringify(body) });
+    msg.innerHTML = `${IC('check')} 任务已创建 <b style="color:var(--accent)">${data.task.id}</b>，可点击「启动」开始运行`;
+    loadTasks();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function loadTasks() {
+  const body = document.getElementById("taskBody");
+  try {
+    const data = await req("/tasks");
+    const list = data.tasks || [];
+    document.getElementById("taskListCount").textContent = `共 ${list.length} 个`;
+    if (!list.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">暂无任务，先在上面创建一个</td></tr>'; return; }
+    body.innerHTML = list.map(t => {
+      const st = t.status === "running" ? '<span class="tag alive">运行中</span>'
+        : t.status === "paused" ? '<span class="tag" style="background:rgba(255,180,84,.15);color:var(--warn)">已暂停</span>'
+        : t.status === "exited" ? '<span class="tag" style="background:rgba(79,140,255,.15);color:var(--accent)">已完成</span>'
+        : '<span class="tag" style="background:rgba(139,148,173,.15);color:var(--muted)">待启动</span>';
+      const acts = [];
+      if (t.status !== "running") acts.push(`<button class="btn" style="padding:4px 10px;font-size:12px" onclick="taskAction('${t.id}','start')">启动</button>`);
+      if (t.status === "running") acts.push(`<button class="btn gray" style="padding:4px 10px;font-size:12px" onclick="taskAction('${t.id}','pause')">暂停</button>`);
+      if (t.status === "paused") acts.push(`<button class="btn green" style="padding:4px 10px;font-size:12px" onclick="taskAction('${t.id}','resume')">恢复</button>`);
+      acts.push(`<button class="btn gray" style="padding:4px 10px;font-size:12px" onclick="viewTaskLog('${t.id}')">日志</button>`);
+      acts.push(`<a class="btn gray" style="padding:4px 10px;font-size:12px;text-decoration:none" href="/api/tasks/${t.id}/export" target="_blank">导出</a>`);
+      acts.push(`<button class="btn" style="padding:4px 10px;font-size:12px;background:var(--danger)" onclick="taskAction('${t.id}','delete')">删除</button>`);
+      return `<tr><td>${t.name}<br><span style="color:var(--muted);font-size:11px">${t.id}</span></td>
+        <td><span class="tag src">${t.type}</span></td>
+        <td>${st}</td><td>${t.item_count}</td>
+        <td style="font-size:12px;color:var(--muted)">${t.created_at}</td>
+        <td style="white-space:nowrap">${acts.join(" ")}</td></tr>`;
+    }).join("");
+  } catch (e) { document.getElementById("taskListMsg").textContent = "加载失败: " + e.message; }
+}
+async function taskAction(id, act) {
+  const msg = document.getElementById("taskListMsg");
+  try {
+    const path = act === "delete" ? `/tasks/${id}` : `/tasks/${id}/${act}`;
+    const data = await req(path, { method: act === "delete" ? "DELETE" : "POST", body: "{}" });
+    msg.innerHTML = IC('check') + " " + act + " 成功";
+    loadTasks();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function viewTaskLog(id) {
+  const el = document.getElementById("taskLog");
+  el.classList.remove("hidden");
+  el.textContent = "加载日志...";
+  try {
+    const data = await req(`/tasks/${id}/log?tail=200`);
+    el.textContent = data.log || "(日志为空)";
+  } catch (e) { el.textContent = "加载失败: " + e.message; }
+}
+setInterval(() => {
+  if (!document.getElementById("app").classList.contains("hidden") && !document.getElementById("sec-tasks").classList.contains("hidden")) loadTasks();
+}, 5000);
+
+/* ---------- 会话管理 ---------- */
+async function loadSessions() {
+  const el = document.getElementById("sessionList");
+  try {
+    const data = await req("/sessions");
+    if (data.sessions === null) { el.innerHTML = '<span style="color:var(--muted)">会话服务不可用: ' + escapeHtml(data.error || "") + '</span>'; return; }
+    const list = (data.sessions && (data.sessions.sessions || data.sessions)) || [];
+    const arr = Array.isArray(list) ? list : (list.session_id ? [list] : Object.values(list));
+    if (!arr.length) { el.innerHTML = '<span style="color:var(--muted)">当前没有打开的会话</span>'; return; }
+    el.innerHTML = arr.map(s => {
+      const sid = s.session_id || s.id || s.name || JSON.stringify(s);
+      return `<div class="arg-row"><span style="flex:1;font-family:monospace;font-size:12px;padding-top:6px">${escapeHtml(String(sid))}</span>
+        <button class="btn gray" style="padding:4px 10px;font-size:12px" onclick="closeSession('${escapeHtml(String(sid))}')">关闭</button></div>`;
+    }).join("");
+  } catch (e) { el.innerHTML = `<span style="color:var(--danger)">加载失败: ${escapeHtml(e.message)}</span>`; }
+}
+async function closeSession(sid) {
+  const msg = document.getElementById("sessionMsg");
+  try { await req(`/sessions/${encodeURIComponent(sid)}/close`, { method: "POST", body: "{}" }); msg.innerHTML = IC('check') + " 已关闭"; loadSessions(); }
+  catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+
+/* ================= 新功能 JS ================= */
+async function loadPub() {
+  try { PUB = await req("/settings-public"); } catch (e) { PUB = null; }
+  if (PUB) {
+    if (PUB.trial_quota) document.getElementById("authTrial").textContent = PUB.trial_quota;
+    if (PUB.trial_quota) document.getElementById("pFreeTrial").textContent = PUB.trial_quota;
+    if (PUB.quota_package) document.getElementById("pPackage").textContent = PUB.quota_package;
+    document.title = (PUB.site_name || "Scrapling 云抓取平台");
+  }
+}
+/* hero 终端 */
+let termTimer = null;
+function startTerm() {
+  if (termTimer || document.getElementById("landing").classList.contains("hidden")) return;
+  termTimer = setInterval(() => {
+    const el = document.getElementById("termIp");
+    if (el && document.getElementById("landing").classList.contains("hidden") === false) {
+      const ip = Array.from({ length: 4 }, () => Math.floor(Math.random() * 200) + 10).join(".");
+      el.textContent = ip;
+    }
+  }, 1800);
+}
+async function loadMetrics() {
+  try {
+    const st = await fetch(API + "/stats-public").then(r => r.json());
+    if (st.proxies !== undefined) document.getElementById("mProxies").textContent = st.proxies;
+    if (st.alive !== undefined) document.getElementById("mAlive").textContent = st.alive;
+    if (st.mcp_tools !== undefined) document.getElementById("mTools").textContent = st.mcp_tools + " 个";
+  } catch (e) {}
+}
+/* reveal 动画 */
+const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add("on"); }), { threshold: .15 });
+document.querySelectorAll(".reveal").forEach(el => rv.observe(el));
+
+/* 概览 */
+async function loadOverview() {
+  const ov = document.getElementById("ovUsage");
+  try {
+    const d = await req("/me");
+    ME = d.user;
+    const quotaEl = document.getElementById("ovQuota");
+    quotaEl.textContent = ME.master ? "∞" : ME.quota;
+    document.getElementById("sideQuota").textContent = ME.master ? "∞" : ME.quota;
+    document.getElementById("topQuota").textContent = ME.master ? "∞" : ME.quota;
+    const used = (d.usage || []).reduce((s, u) => s + (u.cost || 0), 0);
+    document.getElementById("ovUsed").textContent = used;
+    ov.innerHTML = (d.usage || []).length
+      ? (d.usage || []).slice(0, 15).map(u => `<div class="row"><span class="a">${escapeHtml(u.action)}</span><span class="c">-${u.cost}</span><span class="t">${escapeHtml(u.ts)}</span></div>`).join("")
+      : '<span style="color:var(--muted)">还没有调用记录，去「抓取工具」试试。</span>';
+  } catch (e) { ov.innerHTML = `<span style="color:var(--danger)">加载失败: ${escapeHtml(e.message)}</span>`; }
+  try {
+    const st = await req("/status");
+    const el = document.getElementById("ovStatus");
+    const ok = st.mcp && st.mcp.ok;
+    el.innerHTML = `<div class="status-row"><span class="${ok ? "ok" : "bad"}">● 抓取服务 ${ok ? "在线" : "离线"}</span>` +
+      `<span>代理池 ${st.proxies ?? "—"}</span><span>工具 ${st.mcp ? st.mcp.tools : "—"}</span></div>`;
+  } catch (e) {}
+}
+
+/* 高级工具 */
+async function advRun(tool) {
+  const conf = {
+    page_markdown: ["advMdUrl", "advMdRes", "advMdMsg", { css_selector: "advMdCss" }],
+    site_markdown: ["advSiteUrl", "advSiteRes", "advSiteMsg", { max_pages: "advSitePages" }],
+    capture_xhr: ["advXhrUrl", "advXhrRes", "advXhrMsg", {}],
+    selector_gen: ["advSelUrl", "advSelRes", "advSelMsg", { css: "advSelCss", xpath: "advSelXpath", text: "advSelText" }],
+    extract_cli: ["advCliUrl", "advCliRes", "advCliMsg", { format: "advCliFmt", css_selector: "advCliCss", mode: "advCliMode" }],
+  };
+  const [urlId, resId, msgId, extras] = conf[tool];
+  const url = document.getElementById(urlId).value.trim();
+  const msg = document.getElementById(msgId);
+  const res = document.getElementById(resId);
+  if (!url) { msg.textContent = "请先填写网址"; return; }
+  const args = { url };
+  for (const [k, v] of Object.entries(extras)) {
+    const val = document.getElementById(v).value.trim();
+    if (val) args[k] = isNaN(val) ? val : Number(val);
+  }
+  msg.textContent = "执行中…（容器启动 + 抓取，约 10-60 秒）";
+  res.classList.add("hidden");
+  try {
+    const d = await req("/scrapling/advanced", { method: "POST", body: JSON.stringify({ tool, args }) });
+    if (d.ok === false) { msg.innerHTML = IC('x') + " " + escapeHtml(d.error || "执行失败"); return; }
+    msg.innerHTML = IC('check') + " 完成";
+    let txt = JSON.stringify(d, null, 2);
+    if (d.markdown) txt = d.markdown;
+    else if (d.markdown_preview) txt = d.markdown_preview;
+    else if (d.content) txt = d.content;
+    res.textContent = txt;
+    res.classList.remove("hidden");
+    loadMe();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+
+/* API Key */
+async function loadApiKeys() {
+  const body = document.getElementById("apikeyBody");
+  try {
+    const d = await req("/me/apikeys");
+    const keys = d.keys || [];
+    document.getElementById("qKeys").textContent = keys.length;
+    body.innerHTML = keys.length ? keys.map(k => `<tr><td>${escapeHtml(k.name)}</td><td>${escapeHtml(k.created_at)}</td><td>${escapeHtml(k.last_used_at || "从未使用")}</td><td><button class="btn gray" style="padding:3px 10px;font-size:12px" onclick="deleteApiKey('${k.id}')">删除</button></td></tr>`).join("")
+      : '<tr><td colspan="4" style="color:var(--muted)">还没有 API Key，先生成一个。</td></tr>';
+  } catch (e) { body.innerHTML = `<tr><td colspan="4" style="color:var(--danger)">${escapeHtml(e.message)}</td></tr>`; }
+}
+async function createApiKey() {
+  const name = document.getElementById("apikeyName").value.trim() || "默认";
+  const msg = document.getElementById("apikeyMsg");
+  try {
+    const d = await req("/me/apikeys", { method: "POST", body: JSON.stringify({ name }) });
+    document.getElementById("apikeyNewVal").textContent = d.key;
+    document.getElementById("apikeyNew").classList.remove("hidden");
+    msg.innerHTML = IC('check') + " 已生成";
+    loadApiKeys();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function deleteApiKey(id) {
+  const msg = document.getElementById("apikeyMsg");
+  try { await req("/me/apikeys/" + id, { method: "DELETE" }); msg.innerHTML = IC('check') + " 已删除"; loadApiKeys(); }
+  catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+
+/* 额度 */
+async function loadQuota() {
+  try {
+    const d = await req("/me");
+    ME = d.user;
+    document.getElementById("qQuota").textContent = ME.master ? "∞" : ME.quota;
+    document.getElementById("qTotal").textContent = ME.master ? "∞" : ME.total_quota;
+    document.getElementById("qUsed").textContent = (d.usage || []).reduce((s, u) => s + (u.cost || 0), 0);
+    const body = document.getElementById("quotaUsage");
+    body.innerHTML = (d.usage || []).length
+      ? d.usage.map(u => `<tr><td>${escapeHtml(u.ts)}</td><td>${escapeHtml(u.action)}</td><td>${u.cost}</td></tr>`).join("")
+      : '<tr><td colspan="3" style="color:var(--muted)">暂无调用记录</td></tr>';
+  } catch (e) {}
+  renderBuyBox();
+}
+function renderBuyBox() {
+  const box = document.getElementById("quotaBuyBox");
+  const pkg = PUB ? PUB.quota_package : "500";
+  if (PUB && PUB.payment_enabled) {
+    box.innerHTML = `<div class="grid"><div class="stat"><div class="k">套餐</div><div class="v gold">${pkg} 次</div></div>` +
+      `<div class="stat"><div class="k">价格</div><div class="v">¥${PUB.price_per_quota || "0.05"}/次</div></div></div>` +
+      `<div style="margin-top:14px"><button class="btn">立即支付购买</button></div>`;
+  } else {
+    const href = (PUB && PUB.contact_url) || "mailto:support@example.com";
+    box.innerHTML = `<div style="padding:16px;background:rgba(232,196,104,.06);border:1px dashed rgba(232,196,104,.4);border-radius:10px">` +
+      `<div style="font-weight:600;margin-bottom:6px">${IC('chat')} 支付接口尚未开通</div>` +
+      `<div style="color:var(--muted);font-size:13px;margin-bottom:12px">如需购买额度，请联系管理员客服充值（${pkg} 次 / 套餐）。</div>` +
+      `<a class="btn gold" href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml((PUB && PUB.contact_text) || "联系客服")}</a></div>`;
+  }
+}
+function goQuota() { switchTab("quota"); }
+
+/* 管理后台 */
+async function adminLoad() {
+  try {
+    const st = await req("/admin/stats");
+    document.getElementById("adminStats").innerHTML = [
+      ["用户数", st.users], ["API 调用", st.api_calls], ["API Key", st.api_keys],
+      ["累计额度", st.total_quota], ["已消耗", st.used_quota],
+    ].map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v gold">${v}</div></div>`).join("");
+  } catch (e) {}
+  try {
+    const d = await req("/admin/users");
+    const body = document.getElementById("adminUsersBody");
+    body.innerHTML = d.users.map(u => `<tr>
+      <td>${escapeHtml(u.username)}</td>
+      <td>${u.role === "admin" ? '<span class="tag src">管理员</span>' : '用户'}</td>
+      <td class="mono">${u.quota}</td><td class="mono">${u.total_quota}</td>
+      <td>${u.status === "active" ? '<span class="tag alive">正常</span>' : '<span class="tag dead">已禁用</span>'}</td>
+      <td style="color:var(--muted)">${escapeHtml(u.created_at)}</td>
+      <td><button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="adminQuota('${u.id}')">充值</button>
+          <button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="adminToggle('${u.id}','${u.status}')">${u.status === "active" ? "禁用" : "启用"}</button>
+          <button class="btn gray" style="padding:3px 8px;font-size:12px" onclick="adminRole('${u.id}','${u.role}')">${u.role === "admin" ? "降级" : "设为管理员"}</button></td></tr>`).join("");
+  } catch (e) { document.getElementById("adminUsersMsg").innerHTML = IC('x') + " " + escapeHtml(e.message); }
+  try {
+    const d = await req("/admin/settings");
+    const s = d.settings || {};
+    document.getElementById("adminSettings").innerHTML = [
+      ["site_name", "站点名称", s.site_name, "text"],
+      ["announcement", "公告（控制台顶部横幅）", s.announcement, "text"],
+      ["payment_enabled", "支付接口（1=已开通 0=未开通→显示联系客服）", s.payment_enabled, "select:1:已开通:0:未开通"],
+      ["contact_url", "客服链接（未开通支付时购买按钮跳转）", s.contact_url, "text"],
+      ["contact_text", "客服按钮文字", s.contact_text, "text"],
+      ["trial_quota", "新用户试用额度（次）", s.trial_quota, "text"],
+      ["price_per_quota", "单价（元/次，展示用）", s.price_per_quota, "text"],
+      ["quota_package", "默认套餐（次）", s.quota_package, "text"],
+    ].map(([k, name, val, type]) => {
+      const input = type.startsWith("select:")
+        ? `<select data-k="${k}" style="flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text)">` +
+          type.split(":").slice(2).reduce((acc, cur, i, arr) => acc + (i % 2 === 0 ? `<option value="${cur}" ${String(val) === cur ? "selected" : ""}>${arr[i + 1] || cur}</option>` : ""), "") + `</select>`
+        : `<input data-k="${k}" value="${escapeHtml(val)}" style="flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text)">`;
+      return `<div class="arg-row"><label>${name}</label>${input}</div>`;
+    }).join("") +
+    `<div style="margin:22px 0 10px;border-top:1px solid var(--line);padding-top:16px"><b>${IC('mail')} 发信邮箱（SMTP）</b><div style="color:var(--muted);font-size:12px;margin-top:4px">配置后新用户注册将自动收到欢迎邮件。示例：QQ 邮箱 smtp.qq.com / 465 / SSL，密码填授权码。</div></div>` +
+    [
+      ["smtp_host", "SMTP 服务器", s.smtp_host, "text"],
+      ["smtp_port", "端口（465=SSL / 587=STARTTLS）", s.smtp_port, "text"],
+      ["smtp_user", "SMTP 账号（邮箱）", s.smtp_user, "text"],
+      ["smtp_pass", "SMTP 授权码/密码", s.smtp_pass, "password"],
+      ["smtp_from", "发件人名称（如：Scrapling 云抓取平台）", s.smtp_from, "text"],
+      ["smtp_tls", "加密方式", s.smtp_tls, "select:1:SSL(465):0:STARTTLS(587)"],
+      ["smtp_welcome", "注册欢迎邮件", s.smtp_welcome, "select:1:发送:0:不发送"],
+    ].map(([k, name, val, type]) => {
+      const input = type.startsWith("select:")
+        ? `<select data-k="${k}" style="flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text)">` +
+          type.split(":").slice(2).reduce((acc, cur, i, arr) => acc + (i % 2 === 0 ? `<option value="${cur}" ${String(val) === cur ? "selected" : ""}>${arr[i + 1] || cur}</option>` : ""), "") + `</select>`
+        : `<input data-k="${k}" type="${type === "password" ? "password" : "text"}" value="${escapeHtml(val)}" style="flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text)">`;
+      return `<div class="arg-row"><label>${name}</label>${input}</div>`;
+    }).join("") +
+    `<div class="arg-row"><label>发送测试邮件到</label><input id="testEmailTo" placeholder="收件邮箱" style="flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text)"><button class="btn gray" style="padding:8px 14px" onclick="adminTestEmail()">发送测试</button></div>` +
+    `<div id="smtpTestMsg" style="color:var(--muted);font-size:13px;margin-top:6px"></div>`;
+  } catch (e) { document.getElementById("adminSetMsg").innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function adminSaveSettings() {
+  const body = {};
+  document.querySelectorAll("#adminSettings [data-k]").forEach(el => body[el.dataset.k] = el.value);
+  try {
+    await req("/admin/settings", { method: "POST", body: JSON.stringify(body) });
+    document.getElementById("adminSetMsg").innerHTML = IC('check') + " 已保存";
+    loadPub();
+  } catch (e) { document.getElementById("adminSetMsg").innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function adminQuota(uid) {
+  const n = prompt("输入要充值的额度（次）");
+  if (!n || isNaN(n) || Number(n) <= 0) return;
+  try { await req("/admin/users/" + uid + "/quota", { method: "POST", body: JSON.stringify({ n: Number(n) }) }); adminLoad(); }
+  catch (e) { alert(e.message); }
+}
+async function adminToggle(uid, status) {
+  try { await req("/admin/users/" + uid + "/status", { method: "POST", body: JSON.stringify({ status: status === "active" ? "disabled" : "active" }) }); adminLoad(); }
+  catch (e) { alert(e.message); }
+}
+async function adminRole(uid, role) {
+  try { await req("/admin/users/" + uid + "/role", { method: "POST", body: JSON.stringify({ role: role === "admin" ? "user" : "admin" }) }); adminLoad(); }
+  catch (e) { alert(e.message); }
+}
+async function adminTestEmail() {
+  const to = document.getElementById("testEmailTo").value.trim();
+  const msg = document.getElementById("smtpTestMsg");
+  if (!to) { msg.textContent = "请填写收件邮箱"; return; }
+  msg.textContent = "发送中…";
+  try {
+    await req("/admin/test-email", { method: "POST", body: JSON.stringify({ to }) });
+    msg.innerHTML = IC('check') + " 测试邮件已发送，请查收";
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function adminAddUser() {
+  const username = prompt("新用户名（至少 3 位）");
+  if (!username || username.length < 3) return;
+  const password = prompt("初始密码（至少 6 位）");
+  if (!password || password.length < 6) return;
+  const quota = prompt("初始额度（次），回车默认试用额度");
+  try {
+    const d = await req("/admin/users", { method: "POST", body: JSON.stringify({ username, password, quota: quota && !isNaN(quota) ? Number(quota) : undefined }) });
+    alert("已创建用户 " + d.user.username);
+    adminLoad();
+  } catch (e) { alert("操作失败: " + e.message); }
+}
+
+/* 初始化 */
+if (SESSION) { req("/me").then(enterApp).catch(() => { SESSION = ""; localStorage.removeItem("scrapling_session"); showLanding(); }); }
+else { showLanding(); }
+loadPub();
+setInterval(() => { if (!document.getElementById("app").classList.contains("hidden")) loadStatus(); }, 30000);
+setInterval(() => { if (!document.getElementById("app").classList.contains("hidden") && !document.getElementById("sec-tasks").classList.contains("hidden")) loadTasks(); }, 5000);
+
+</script>
+</body>
+</html>
