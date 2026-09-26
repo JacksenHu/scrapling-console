@@ -1619,15 +1619,30 @@ async def api_create_task(request: Request):
                 allowed.append(m.group(1))
         allowed = list(dict.fromkeys(allowed))
 
-    # 字段定义：支持 "字段名:选择器" 每行一个，或字段 JSON
+    # 字段定义：支持 "字段名:选择器"（默认CSS）与 "字段名:模式:值"（css/xpath/regex/text/attr）
     fields = []
     frows = [x.strip() for x in (body.get("fields") or "").splitlines() if x.strip()]
     for row in frows:
-        if ":" in row:
-            fname, sel = [p.strip() for p in row.split(":", 1)]
+        parts = [p.strip() for p in row.split(":", 2)]
+        fname = parts[0]
+        if len(parts) >= 3 and parts[1] in ("css", "xpath", "regex", "text", "attr"):
+            mode, val = parts[1], parts[2]
+            if mode == "attr":
+                seg = val.split("|", 1)
+                fields.append({"name": fname, "mode": "attr", "attr": seg[0],
+                               "selector": seg[1] if len(seg) > 1 else ""})
+            elif mode == "regex":
+                seg = val.split("|", 1)
+                fields.append({"name": fname, "mode": "regex", "pattern": seg[0],
+                               "selector": seg[1] if len(seg) > 1 else ""})
+            elif mode == "text":
+                fields.append({"name": fname, "mode": "text", "text": val})
+            else:
+                fields.append({"name": fname, "mode": mode, "selector": val})
+        elif len(parts) >= 2 and ":" in row:
+            fields.append({"name": fname, "selector": parts[1]})
         else:
-            fname, sel = row, ""
-        fields.append({"name": fname, "selector": sel})
+            fields.append({"name": fname, "selector": ""})
 
     rules = body.get("crawl_rules") or {}
     if isinstance(rules, str):
@@ -1796,6 +1811,40 @@ def _xml(v):
 
 
 # ---------------- 会话管理 ----------------
+
+SESSION_PRESETS = {
+    "默认": {},
+    "桌面Chrome": {"useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36", "timezone_id": "Asia/Shanghai", "locale": "zh-CN"},
+    "桌面Safari": {"useragent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15", "timezone_id": "America/New_York", "locale": "en-US"},
+    "移动iPhone": {"useragent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1", "timezone_id": "Asia/Tokyo", "locale": "ja-JP"},
+    "移动安卓": {"useragent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UD1A.230803.041) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36", "timezone_id": "Asia/Shanghai", "locale": "zh-CN"},
+    "硬核反爬": {"hide_canvas": True, "block_webrtc": True, "headless": True},
+}
+
+@app.post("/api/sessions")
+async def api_session_create(request: Request):
+    """创建持久抓取会话（浏览器/反爬/HTTP 三类），支持指纹预设、CDP 远程浏览器、代理"""
+    body = await request.json()
+    session_type = (body.get("session_type") or "stealthy").strip()
+    session_id = (body.get("session_id") or uuid.uuid4().hex[:8]).strip()[:64]
+    preset_name = (body.get("preset") or "默认")
+    preset = SESSION_PRESETS.get(preset_name, {})
+    args = {"session_type": session_type, "session_id": session_id}
+    for k in ("headless", "real_chrome", "timezone_id", "locale", "useragent", "proxy",
+              "cdp_url", "executable_path", "cookies", "hide_canvas", "block_webrtc", "allow_webgl"):
+        if body.get(k) is not None:
+            args[k] = body[k]
+    for k, v in preset.items():
+        if k not in args or args[k] is None:
+            args[k] = v
+    tool = "open_session" if session_type in ("browser", "stealthy") else "open_request_session"
+    try:
+        result, _ = mcp_request("tools/call", {"name": tool, "arguments": args})
+        return {"ok": True, "session": {"session_id": session_id, "session_type": session_type,
+                                         "preset": preset_name, "proxy": args.get("proxy"),
+                                         "cdp_url": args.get("cdp_url")}, "detail": result}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"创建会话失败: {e}")
 
 @app.get("/api/sessions")
 def api_sessions():

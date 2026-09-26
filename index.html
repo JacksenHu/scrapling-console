@@ -883,9 +883,37 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
     </div>
 
     <div class="card">
-      <h2>浏览器会话<small>查看 / 关闭已打开的会话（截图、动态抓取会产生会话）</small></h2>
-      <div id="sessionList"><span style="color:var(--muted)">加载中...</span></div>
+      <h2><svg class="ic"><use href="#i-layer"/></svg> 浏览器会话<small>持久会话：登录态保持、跨请求复用；支持指纹预设、CDP 远程浏览器、代理出口</small></h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+        <div class="arg-row"><label>会话类型</label>
+          <select id="sessType">
+            <option value="stealthy">反爬浏览器（Stealthy）</option>
+            <option value="browser">标准浏览器（Playwright）</option>
+            <option value="request">HTTP 请求（无浏览器）</option>
+          </select></div>
+        <div class="arg-row"><label>指纹预设</label>
+          <select id="sessPreset">
+            <option value="默认">默认</option>
+            <option value="桌面Chrome">桌面 Chrome</option>
+            <option value="桌面Safari">桌面 Safari</option>
+            <option value="移动iPhone">移动 iPhone</option>
+            <option value="移动安卓">移动安卓</option>
+            <option value="硬核反爬">硬核反爬（隐藏Canvas+禁WebRTC）</option>
+          </select></div>
+        <div class="arg-row"><label>会话ID（可留空自动生成）</label>
+          <input id="sessId" placeholder="my-session"></div>
+        <div class="arg-row"><label>代理（可选）</label>
+          <input id="sessProxy" placeholder="http://ip:port 或留空用代理池"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+        <div class="arg-row"><label>CDP 远程浏览器（可选）</label>
+          <input id="sessCdp" placeholder="ws://或http://CDP地址"></div>
+        <div class="arg-row"><label>自定义 UA / 时区（可选）</label>
+          <input id="sessUa" placeholder="UA 或 时区ID，如 Asia/Shanghai"></div>
+      </div>
+      <button class="btn green" onclick="createSession()"><svg class="ic"><use href="#i-plus"/></svg> 创建会话</button>
       <div class="msg" id="sessionMsg"></div>
+      <div id="sessionList"><span style="color:var(--muted)">加载中...</span></div>
     </div>
   </section>
 
@@ -1050,7 +1078,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       <div class="arg-row" id="rowShopify" style="display:none"><label>商店域名</label>
         <input id="taskWebsite" placeholder="如 my-store.myshopify.com（也可用上面的 URL）"></div>
       <div class="arg-row"><label>提取字段</label>
-        <textarea id="taskFields" placeholder="每行一个：字段名:CSS选择器&#10;例：&#10;标题:h1.product-title&#10;价格:.price&#10;链接:a.title::attr(href)&#10;留空则只抓 URL"></textarea></div>
+        <textarea id="taskFields" placeholder="每行一个：字段名:CSS选择器&#10;可选模式前缀：字段名:模式:值&#10;例：&#10;标题:css:h1.product-title&#10;价格:xpath://span[@class=&#39;price&#39;]&#10;编号:regex:(SN-\d+)&#10;价格文本:text:¥&#10;链接:attr:href|a.title&#10;留空则只抓 URL"></textarea></div>
       <div class="arg-row" id="rowCrawlRules" style="display:none"><label>跟随规则</label>
         <textarea id="taskRules" placeholder="每行一个正则，匹配的链接才跟随（留空 = 跟随全部站内链接）&#10;例：/product/\d+"></textarea></div>
       <div class="arg-row" id="rowItertag" style="display:none"><label>XML 节点</label>
@@ -1827,6 +1855,14 @@ curl -X POST https://YOUR-SERVER:8080/api/proxy/visit   -H "X-Api-Key: sk-你的
 <div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/admin/residential-nodes</span><span class="ep-desc">[管理] 平台节点池（可按 app / status 筛选）</span></div><div class="codeblock">curl -H "X-Auth: 主PIN" "https://YOUR-SERVER:8080/api/admin/residential-nodes?limit=100"</div></div>
 <div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/admin/residential-nodes/{nid}/remove</span><span class="ep-desc">[管理] 强制移除平台节点</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/admin/residential-nodes/a1b2.../remove -H "X-Auth: 主PIN"</div></div>
 <div class="ep-note"><b>客户端脚本（快速集成）：</b><code>python residential_client.py --api https://YOUR-SERVER:8080 --app-token &lt;AppToken&gt; --port 3128 --interval 300</code>；自用模式 <code>--api-key sk-xxx</code>。脚本自动：探测出口 IP → 上报 → 心跳保活。</div>
+
+<div class="guide-sec-title" id="api-sessions">⑧ 持久会话（指纹 / CDP / 代理）</div>
+<div class="ep-note"><b>用途：</b>会话保持登录态与 Cookie，跨多次抓取复用；支持浏览器指纹预设（UA/时区/Canvas/WebRTC）、CDP 远程浏览器接入、代理出口。任务与高级工具可复用会话。</div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/sessions</span><span class="ep-desc">创建持久会话（浏览器/反爬/HTTP 三类）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>session_type</code></td><td>string</td><td>stealthy（反爬浏览器，默认）/ browser（Playwright）/ request（HTTP）</td></tr><tr><td><code>preset</code></td><td>string</td><td>指纹预设：默认 / 桌面Chrome / 桌面Safari / 移动iPhone / 移动安卓 / 硬核反爬</td></tr><tr><td><code>session_id</code></td><td>string</td><td>自定义 ID（留空自动生成）</td></tr><tr><td><code>proxy</code></td><td>string</td><td>代理出口，如 http://ip:port（留空默认无代理）</td></tr><tr><td><code>cdp_url</code></td><td>string</td><td>CDP 远程浏览器地址（ws:// 或 http://）</td></tr><tr><td><code>useragent</code></td><td>string</td><td>自定义 UA（覆盖预设）</td></tr><tr><td><code>timezone_id / locale / hide_canvas / block_webrtc / allow_webgl</code></td><td>混合</td><td>指纹细节参数（可选）</td></tr></tbody></table><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/sessions -H "X-Api-Key: sk-你的APIKey" -H "Content-Type: application/json" -d '{"session_type":"stealthy","preset":"桌面Chrome","proxy":"http://1.2.3.4:8080"}'</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/sessions</span><span class="ep-desc">会话列表（含存活状态与配置）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/sessions</div></div>
+<div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/sessions/{sid}/close</span><span class="ep-desc">关闭会话释放资源</span></div><div class="codeblock">curl -X POST https://YOUR-SERVER:8080/api/sessions/my-session/close -H "X-Api-Key: sk-你的APIKey"</div></div>
+<div class="ep-note"><b>任务提取字段支持四种模式</b>（创建任务时 fields 每行）：<code>字段名:css:选择器</code>（默认）/ <code>字段名:xpath://xpath</code> / <code>字段名:regex:正则|定位选择器</code> / <code>字段名:text:关键词</code> / <code>字段名:attr:属性|选择器</code>。例：<code>价格:xpath://span[@class=&quot;price&quot;]</code>、<code>编号:regex:(SN-\d+)</code>。</div>
+
 
 <div class="guide-sec-title" id="api-tasks">⑦ 爬虫任务（整站/定时/批量）</div>
 <div class="endpoint"><div class="ep-head"><span class="method m-get">GET</span><span class="ep-path">/api/tasks</span><span class="ep-desc">全部爬虫任务列表（状态/已抓条数/日志大小）</span></div><div class="codeblock">curl -H "X-Api-Key: sk-你的APIKey" https://YOUR-SERVER:8080/api/tasks</div></div><div class="endpoint"><div class="ep-head"><span class="method m-post">POST</span><span class="ep-path">/api/tasks</span><span class="ep-desc">创建爬虫任务（容器隔离执行，可暂停/恢复/断点续爬）</span></div><table class="ptab"><thead><tr><th style="width:26%">参数</th><th style="width:12%">类型</th><th>说明</th></tr></thead><tbody><tr><td><code>type</code><span class="req">必填</span></td><td>string</td><td>crawl=全站爬取(默认) | single=单页提取 | sitemap=站点地图 | xml=RSS | csv=CSV Feed | shopify=Shopify 商店产品</td></tr><tr><td><code>name</code><span class="req">必填</span></td><td>string</td><td>任务名</td></tr><tr><td><code>start_urls</code><span class="req">必填</span></td><td>string</td><td>起始网址，逗号或换行分隔（shopify 可用 target_website）</td></tr><tr><td><code>target_website</code><span class="req">必填</span></td><td>string</td><td>仅 shopify：商店域名</td></tr><tr><td><code>fields</code><span class="req">必填</span></td><td>string</td><td>提取字段，每行「字段名:选择器」如「标题:h1
@@ -2774,6 +2810,22 @@ async function loadSessions() {
         <button class="btn gray" style="padding:4px 10px;font-size:12px" onclick="closeSession('${escapeHtml(String(sid))}')">关闭</button></div>`;
     }).join("");
   } catch (e) { el.innerHTML = `<span style="color:var(--danger)">加载失败: ${escapeHtml(e.message)}</span>`; }
+}
+async function createSession() {
+  const msg = document.getElementById("sessionMsg");
+  const body = {
+    session_type: document.getElementById("sessType").value,
+    preset: document.getElementById("sessPreset").value,
+    session_id: document.getElementById("sessId").value.trim(),
+    proxy: document.getElementById("sessProxy").value.trim(),
+    cdp_url: document.getElementById("sessCdp").value.trim(),
+    useragent: document.getElementById("sessUa").value.trim() || null,
+  };
+  try {
+    const d = await req("/sessions", { method: "POST", body: JSON.stringify(body) });
+    msg.innerHTML = IC('check') + " 会话已创建：<b>" + escapeHtml(d.session.session_id) + "</b>（" + escapeHtml(d.session.session_type) + "）";
+    loadSessions();
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
 }
 async function closeSession(sid) {
   const msg = document.getElementById("sessionMsg");

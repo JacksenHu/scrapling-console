@@ -44,19 +44,48 @@ def _save_item(item):
         pass
 
 def _extract_fields(response, fields, adaptive):
+    import re as _re
     item = {{"url": str(getattr(response, "url", ""))}}
     for f in fields:
         try:
+            mode = f.get("mode") or ("xpath" if f.get("xpath") else "css")
             sel = f.get("selector") or ""
-            if f.get("xpath"):
-                node = response.xpath(f["xpath"])
-            elif sel:
-                node = response.css(sel, adaptive=adaptive)
-            else:
-                node = response
             attr = f.get("attr") or "text"
+            if mode == "xpath":
+                node = response.xpath(f.get("xpath") or sel)
+            elif mode == "regex":
+                # 正则提取：先在 CSS/XPath 定位，再对文本做正则匹配（pattern 支持分组名/数字组）
+                pattern = f.get("pattern") or ""
+                if f.get("xpath"):
+                    base = response.xpath(f["xpath"])
+                elif sel:
+                    base = response.css(sel, adaptive=adaptive)
+                else:
+                    base = response
+                raw = (base.css("::text").get() if base is not None else None) or ""
+                m = _re.search(pattern, raw, _re.S)
+                if m:
+                    val = m.group(1) if m.lastindex else m.group(0)
+                else:
+                    val = None
+                item[f["name"]] = (val or "").strip() if isinstance(val, str) else val
+                continue
+            elif mode == "text":
+                # 文本搜索：查找包含关键词的元素并返回其文本
+                kw = (f.get("text") or sel or "").strip()
+                node = response.xpath(f"//*[contains(text(), {json.dumps(kw)})]") if kw else None
+            elif mode == "attr":
+                node = response.css(sel, adaptive=adaptive) if sel else response
+                if hasattr(node, "attr"):
+                    val = node.attr(attr)
+                else:
+                    val = None
+                item[f["name"]] = (val or "").strip() if isinstance(val, str) else val
+                continue
+            else:
+                node = response.css(sel, adaptive=adaptive) if sel else response
             if attr == "text":
-                val = node.css("::text").get() if sel else None
+                val = node.css("::text").get() if (node is not None and sel) else None
             elif hasattr(node, "attr"):
                 val = node.attr(attr)
             else:
