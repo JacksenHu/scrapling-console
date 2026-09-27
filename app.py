@@ -1658,6 +1658,21 @@ def save_alive(items, updated_at=None):
         pass
 
 
+
+def mark_proxy_dead(proxy_url):
+    """访问失败的代理：从存活池移除，避免反复选中"""
+    try:
+        pp = (proxy_url or "").split("://")[-1]
+        if ":" not in pp:
+            return
+        ip, port = pp.rsplit(":", 1)
+        alive, _ = load_alive()
+        new = [a for a in alive if not (a.get("ip") == ip and str(a.get("port")) == str(port))]
+        if len(new) != len(alive):
+            save_alive(new)
+    except Exception:
+        pass
+
 def touch_alive(ip, port, protocol="http", ms=None, exit_ip=None, source=""):
     """把「真实访问成功」的代理写进存活池（越用越准）"""
     if not ip or not port:
@@ -1676,6 +1691,47 @@ def touch_alive(ip, port, protocol="http", ms=None, exit_ip=None, source=""):
                 "ms": int(ms) if ms is not None else 0,
                 "exit_ip": exit_ip or "", "checked_at": time.strftime("%Y-%m-%d %H:%M:%S")})
     save_alive(cur)
+
+
+def pick_proxy_candidates(url, n=5):
+    """按质量排序返回候选代理列表：住宅池 > 该站可用池 > 存活池(延迟升序) > 全池"""
+    out = []
+    seen = set()
+    def add(p_url):
+        if p_url and p_url not in seen:
+            seen.add(p_url)
+            out.append(p_url)
+    try:
+        pool = [x for x in load_residential_nodes() if _node_fresh(x)]
+        for p in pool[:n]:
+            add(f"{p.get('protocol', 'http')}://{p['ip']}:{p['port']}")
+    except Exception:
+        pass
+    try:
+        if os.path.exists(TARGET_USABLE_FILE):
+            data = json.load(open(TARGET_USABLE_FILE, "r", encoding="utf-8"))
+            rec = data.get(url) or {}
+            for p in (rec.get("ok") or [])[:n]:
+                add(f"{p.get('protocol', 'http')}://{p['ip']}:{p['port']}")
+    except Exception:
+        pass
+    try:
+        alive, _ = load_alive()
+        for p in sorted(alive, key=lambda x: x.get("ms") or 99999)[:n]:
+            add(f"{p.get('protocol', 'http')}://{p['ip']}:{p['port']}")
+    except Exception:
+        pass
+    pool = load_proxies()
+    good = []
+    for p in pool:
+        ip = p.get("ip", ""); port = p.get("port", "")
+        if ip and ip != "0.0.0.0" and port:
+            good.append(f"{p.get('protocol', 'http')}://{ip}:{port}")
+    import random as _r
+    _r.shuffle(good)
+    for p in good[:n]:
+        add(p)
+    return out
 
 def pick_random_proxy():
     """从代理池随机挑一个可用代理，返回 'protocol://ip:port'"""
@@ -1817,8 +1873,8 @@ def log_proxy_visit(rec):
 async def api_proxy_visit(request: Request):
     """用代理池的 IP 打开一个网址（注册页/目标页）
     mode: plain(纯HTTP) | browser(隐身浏览器渲染) | screenshot(浏览器截图)
-    proxy: 可选指定代理（ip:port 或 http://ip:port），不填则自动随机
-    retries: 失败自动换代理重试次数（默认 1）
+    proxy: 可选指定代理（ip:port 或 http://ip:port），不填则自动按质量排序取候选
+    retries: 失败自动换代理重试次数（默认 2，最多 5）
     """
     require_quota(request)
     body = await request.json()
@@ -1826,97 +1882,84 @@ async def api_proxy_visit(request: Request):
     mode = body.get("mode", "plain")
     specified = (body.get("proxy") or "").strip()
     timeout = min(max(int(body.get("timeout", 30) or 30), 5), 120)
-    retries = max(1, min(int(body.get("retries", 1) or 1), 5))
+    retries = max(1, min(int(body.get("retries", 2) or 2), 5))
     if not url:
         raise HTTPException(status_code=400, detail="请填写网址")
     if mode not in ("plain", "browser", "screenshot"):
         raise HTTPException(status_code=400, detail=f"未知模式: {mode}")
 
-    proxy_url = None
+    # 候选代理：指定代理放最前，其余按质量排序（住宅 > 该站可用 > 存活低延迟 > 全池）
+    candidates = []
     if specified:
-        proxy_url = specified if "://" in specified else f"http://{specified}"
+        candidates.append(specified if "://" in specified else f"http://{specified}")
+    candidates += pick_proxy_candidates(url, n=retries + 2)
+    if not candidates:
+        raise HTTPException(status_code=502, detail="代理池为空，请先在代理池页爬取代理")
+
+    def _classify(e):
+        s = str(e)
+        if "Timeout" in s or "timed out" in s or "timeout" in s:
+            return "代理响应超时（可能已失效）"
+        if "Connection" in s or "connect" in s or "refused" in s:
+            return "连接被目标/代理拒绝（代理可能已失效）"
+        if "tunnel" in s or "407" in s or "403" in s:
+            return "目标站拦截或代理需认证"
+        if "browser" in s.lower() or "session" in s.lower():
+            return "浏览器渲染异常"
+        return "访问失败"
 
     last_err = "无可用代理"
-    last_proxy = None
+    tried = []
+    used_mode = mode
     for attempt in range(retries):
-        if proxy_url is None:
-            proxy_url = pick_proxy_for(url, user.get("id"))
-        if not proxy_url:
-            raise HTTPException(status_code=502, detail="代理池为空，请先在代理池页爬取代理")
-        last_proxy = proxy_url
+        if not candidates:
+            break
+        proxy_url = candidates.pop(0)
+        tried.append(proxy_url)
         t0 = time.time()
         exit_ip = check_exit_ip(proxy_url, timeout=6)
         if exit_ip == "LEAK":
-            # 透明代理：出口=服务器IP，等于裸奔，必须换
-            last_err = f"代理 {proxy_url} 是透明代理（出口=服务器IP，会暴露真实IP），已自动换下一个"
-            if attempt + 1 < retries:
-                proxy_url = None
-                continue
-            log_proxy_visit({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "url": url, "mode": mode,
-                             "proxy": proxy_url, "exit_ip": None,
-                             "ms": int((time.time() - t0) * 1000), "ok": False, "error": last_err})
-            raise HTTPException(status_code=502, detail=last_err)
-        # exit_ip 为 None = 回显服务不可达（出口未知），不判死，直接试抓
+            last_err = f"代理 {proxy_url} 是透明代理（出口=服务器IP，会暴露真实IP），已换下一个"
+            continue
         try:
-            if mode == "plain":
-                # 普通请求：服务器 requests 直接走代理（与目标站体检同路径，兼容免费代理）
+            if used_mode == "plain":
                 r = requests.get(url, proxies={"http": proxy_url, "https": proxy_url},
-                                 timeout=min(timeout, 25),
+                                 timeout=min(timeout, 15),
                                  headers={"User-Agent": "Mozilla/5.0"},
                                  allow_redirects=True)
                 text = r.text[:60000]
                 result = {"type": "text",
                           "text": f"[HTTP {r.status_code}] 页面大小 {len(r.content)} 字节\n\n{text}"}
-            elif mode == "browser":
+            else:
                 sess = call_tool("open_session", {
                     "session_type": "dynamic", "headless": True, "proxy": proxy_url})
                 session_id = extract_session_id(sess)
                 try:
-                    # 先验证浏览器出口：明确泄漏(出口=服务器IP)才丢弃；回显不通不判死
                     probe = call_tool("session_fetch", {
                         "url": ECHO_SERVICE, "session_id": session_id,
-                        "main_content_only": False, "timeout": 25000})
+                        "main_content_only": False, "timeout": 20000})
                     probe_ip = extract_ip_from_text(mcp_text(probe))
                     srv = get_server_ip()
                     if probe_ip and srv and probe_ip == srv:
-                        raise Exception(f"浏览器代理未生效（出口=服务器IP，会暴露），已丢弃该代理")
+                        raise Exception("browser: 代理未生效（出口=服务器IP，会暴露）")
                     if probe_ip and not exit_ip:
                         exit_ip = probe_ip
-                    result = parse_result_content(call_tool("session_fetch", {
-                        "url": url, "session_id": session_id, "network_idle": True,
-                        "main_content_only": False, "timeout": 60000}))
-                finally:
-                    try:
-                        call_tool("close_session", {"session_id": session_id})
-                    except Exception:
-                        pass
-            else:  # screenshot
-                sess = call_tool("open_session", {
-                    "session_type": "dynamic", "headless": True, "proxy": proxy_url})
-                session_id = extract_session_id(sess)
-                try:
-                    # 同样先验证浏览器出口：明确泄漏才丢弃
-                    probe = call_tool("session_fetch", {
-                        "url": ECHO_SERVICE, "session_id": session_id,
-                        "main_content_only": False, "timeout": 25000})
-                    probe_ip = extract_ip_from_text(mcp_text(probe))
-                    srv = get_server_ip()
-                    if probe_ip and srv and probe_ip == srv:
-                        raise Exception(f"浏览器代理未生效（出口=服务器IP，会暴露），已丢弃该代理")
-                    if probe_ip and not exit_ip:
-                        exit_ip = probe_ip
-                    result = parse_result_content(call_tool("screenshot", {
-                        "url": url, "session_id": session_id, "image_type": "png",
-                        "full_page": False, "network_idle": True, "timeout": 60000}))
+                    if used_mode == "browser":
+                        result = parse_result_content(call_tool("session_fetch", {
+                            "url": url, "session_id": session_id, "network_idle": True,
+                            "main_content_only": False, "timeout": 25000}))
+                    else:
+                        result = parse_result_content(call_tool("screenshot", {
+                            "url": url, "session_id": session_id, "image_type": "png",
+                            "full_page": False, "network_idle": True, "timeout": 25000}))
                 finally:
                     try:
                         call_tool("close_session", {"session_id": session_id})
                     except Exception:
                         pass
             ms = int((time.time() - t0) * 1000)
-            log_proxy_visit({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "url": url, "mode": mode,
+            log_proxy_visit({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "url": url, "mode": used_mode,
                              "proxy": proxy_url, "exit_ip": exit_ip, "ms": ms, "ok": True})
-            # 真实访问成功 → 回写存活代理池（越用越准）
             try:
                 pp = proxy_url.split("://")[-1]
                 if ":" in pp:
@@ -1924,20 +1967,42 @@ async def api_proxy_visit(request: Request):
                     touch_alive(ip, port, proxy_url.split("://")[0], ms, exit_ip or "")
             except Exception:
                 pass
-            return {"ok": True, "mode": mode, "proxy": proxy_url, "exit_ip": exit_ip,
+            return {"ok": True, "mode": used_mode, "proxy": proxy_url, "exit_ip": exit_ip,
                     "ms": ms, "attempts": attempt + 1, "result": result}
         except HTTPException:
             raise
         except Exception as e:
-            last_err = str(e)[:300]
-            if attempt + 1 < retries:
-                proxy_url = None
-                continue
-            log_proxy_visit({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "url": url, "mode": mode,
-                             "proxy": proxy_url, "exit_ip": exit_ip,
-                             "ms": int((time.time() - t0) * 1000), "ok": False, "error": last_err})
-            raise HTTPException(status_code=502,
-                                detail=f"第 {attempt + 1} 次尝试失败（代理 {last_proxy}）: {last_err}")
+            last_err = _classify(e)
+            # 记录失败代理，避免下次又选中它
+            try:
+                mark_proxy_dead(proxy_url)
+            except Exception:
+                pass
+
+    # 浏览器/截图全失败 → 自动降级 plain 再试一次（至少拿回 HTML）
+    if used_mode != "plain" and candidates:
+        used_mode = "plain"
+        try:
+            proxy_url = candidates.pop(0)
+            t0 = time.time()
+            exit_ip = check_exit_ip(proxy_url, timeout=6)
+            r = requests.get(url, proxies={"http": proxy_url, "https": proxy_url},
+                             timeout=15, headers={"User-Agent": "Mozilla/5.0"},
+                             allow_redirects=True)
+            ms = int((time.time() - t0) * 1000)
+            log_proxy_visit({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "url": url, "mode": "plain",
+                             "proxy": proxy_url, "exit_ip": exit_ip, "ms": ms, "ok": True})
+            return {"ok": True, "mode": "plain", "proxy": proxy_url, "exit_ip": exit_ip,
+                    "ms": ms, "attempts": len(tried) + 1, "result": {"type": "text",
+                    "text": f"[HTTP {r.status_code}] 浏览器渲染失败已自动降级为普通请求，页面大小 {len(r.content)} 字节\n\n{r.text[:60000]}"}}
+        except Exception as e:
+            last_err = _classify(e)
+
+    log_proxy_visit({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "url": url, "mode": used_mode,
+                     "proxy": "", "exit_ip": None,
+                     "ms": 0, "ok": False, "error": last_err})
+    raise HTTPException(status_code=502,
+                        detail=f"代理访问失败（已尝试 {len(tried)} 个代理: {last_err}）。建议：先在代理池页「开始体检」筛可用代理，或用「网页截图/普通请求」模式")
 
 @app.post("/api/proxy/visit/records/clear")
 def api_proxy_records_clear():
