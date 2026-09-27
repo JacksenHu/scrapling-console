@@ -836,7 +836,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       <button class="nav-item active" id="navOverview" onclick="switchTab('overview')"><span><svg class="ic"><use href="#i-home"/></svg></span> 概览</button>
       <button class="nav-item" id="navTools" onclick="switchTab('tools')"><span><svg class="ic"><use href="#i-tools"/></svg></span> 抓取工具</button>
       <button class="nav-item" id="navAdvanced" onclick="switchTab('advanced')"><span><svg class="ic"><use href="#i-bolt"/></svg></span> 高级工具</button>
-      <button class="nav-item" id="navBrowser" onclick="switchTab('browser')"><span><svg class="ic"><use href="#i-eye"/></svg></span> 内置浏览器</button>
+      <button class="nav-item" id="navBrowser" onclick="switchTab('browser')"><span><svg class="ic"><use href="#i-globe"/></svg></span> 代理浏览器</button>
       <button class="nav-item" id="navProxy" onclick="switchTab('proxy')"><span><svg class="ic"><use href="#i-globe"/></svg></span> 代理池</button>
       <button class="nav-item" id="navTasks" onclick="switchTab('tasks')"><span><svg class="ic"><use href="#i-spider"/></svg></span> 爬虫任务</button>
       <button class="nav-item" id="navGuide" onclick="switchTab('guide')"><span><svg class="ic"><use href="#i-book"/></svg></span> 教程</button>
@@ -939,64 +939,61 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
     </div>
   </section>
 
-  <!-- 代理池 -->
+  <!-- 代理浏览器 -->
   <section id="sec-browser" class="hidden">
     <div class="card">
-      <h2><svg class="ic"><use href="#i-eye"/></svg> 内置浏览器<small>用代理池 IP 真实打开网页：页面渲染 / 网页截图 / 源码三视图，注册防关联；不填代理自动智能选池</small></h2>
-      <div class="toolbar" style="flex-wrap:wrap">
-        <input type="text" id="bwUrl" placeholder="输入网址，如 https://example.com/register" style="min-width:320px" onkeydown="if(event.key==='Enter')browserOpen(false)">
-        <select id="bwMode">
-          <option value="auto" selected>代理自动（智能选池）</option>
-          <option value="direct">直连本机（不用代理）</option>
-        </select>
-        <input type="text" id="bwProxy" placeholder="指定代理(可选) 如 1.2.3.4:8080" style="min-width:200px">
-        <select id="bwRetries">
-          <option value="2" selected>失败换 2 个 IP</option>
-          <option value="3">失败换 3 个 IP</option>
-          <option value="5">失败换 5 个 IP</option>
-        </select>
-        <button class="btn" onclick="browserOpen(false)" id="bwBtn"><svg class="ic"><use href="#i-eye"/></svg> 打开页面</button>
-        <button class="btn gray" onclick="browserOpen(true)" title="换一个新的代理 IP 重新打开"><svg class="ic"><use href="#i-refresh"/></svg> 换 IP 重开</button>
+      <h2><svg class="ic"><use href="#i-globe"/></svg> 代理浏览器<small>用代理池 IP 打开电脑默认浏览器（真实浏览器），注册/登录/操作零差异；代理出口实时生效</small></h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="pbUrl" placeholder="输入要打开的网址，如 https://example.com/register" style="flex:1;min-width:300px" onkeydown="if(event.key==='Enter')proxyBrowserOpen()">
+        <button class="btn green" onclick="proxyBrowserOpen()" id="pbBtn"><svg class="ic"><use href="#i-eye"/></svg> 用代理打开</button>
       </div>
-      <div class="seg">
-        <button class="seg-item active" id="bwViewPage" onclick="bwSetView('page')">页面渲染</button>
-        <button class="seg-item" id="bwViewShot" onclick="bwSetView('shot')">网页截图</button>
-        <button class="seg-item" id="bwViewLive" onclick="bwSetView('live')">实时操作</button>
-        <button class="seg-item" id="bwViewSrc" onclick="bwSetView('src')">HTML 源码</button>
-      </div>
-      <div id="bwLive" style="display:none;margin-top:12px">
-        <div class="status-row" id="bwLiveMeta"></div>
-        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:8px">
-          <div style="display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-            <button class="btn gray" title="后退" onclick="bwLiveAct('back')"><svg class="ic" style="width:15px;height:15px;transform:rotate(180deg)"><use href="#i-arrow"/></svg></button>
-            <button class="btn gray" title="前进" onclick="bwLiveAct('forward')"><svg class="ic" style="width:15px;height:15px"><use href="#i-arrow"/></svg></button>
-            <button class="btn gray" title="刷新" onclick="bwLiveAct('reload')"><svg class="ic" style="width:15px;height:15px"><use href="#i-refresh"/></svg></button>
-            <input id="bwLiveAddr" placeholder="输入网址后按回车跳转（走代理）" spellcheck="false" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--ink-1);font-size:13px;font-family:var(--font-mono)" onkeydown="if(event.key==='Enter'){const u=this.value.trim(); if(u) bwLiveAct('goto',{url:u})}">
-            <button class="btn red" onclick="bwLiveClose()">关闭会话</button>
-          </div>
-          <div style="position:relative;background:repeating-conic-gradient(#1b1d19 0% 25%, #141612 0% 50%) 50%/26px 26px;height:66vh;min-height:420px;overflow:hidden" id="bwLiveStage">
-            <img id="bwLiveShot" style="width:100%;height:100%;object-fit:contain;cursor:crosshair;display:block;user-select:none" alt="真实浏览器实时画面" draggable="false"
-                 onmousemove="bwLiveMove(event)" onmousedown="bwLiveDown(event)" onmouseup="bwLiveUp(event)" oncontextmenu="bwLiveCtx(event);return false" onwheel="bwLiveWheel(event)">
-            <div id="bwLiveLoading" class="hidden" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.72);padding:6px 16px;border-radius:8px;font-size:12px;color:var(--ink-1)"><span class="spin"></span> 操作中…</div>
-          </div>
-          <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-            <span id="bwLiveTitle" style="font-size:12px;color:var(--ink-2);font-weight:600"></span>
-            <span id="bwLiveAddr2" style="font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;max-width:300px;white-space:nowrap;font-family:var(--font-mono)"></span>
-            <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <button class="btn gray" id="bwModeClick" onclick="bwLiveMode('click')">点击</button>
-              <button class="btn gray" id="bwModeInput" onclick="bwLiveMode('input')">输入</button>
-              <button class="btn gray" id="bwModeDrag" onclick="bwLiveMode('drag')">拖拽</button>
-              <input type="text" id="bwLiveText" placeholder="输入文字内容" style="width:170px">
-            </span>
+      <div class="msg" id="pbMsg"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px">
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+          <div style="font-weight:600;font-size:13.5px;margin-bottom:8px">第 1 步 · 安装 SwitchyOmega 扩展（仅一次）</div>
+          <div style="font-size:12px;color:var(--ink-3);line-height:1.7">在 <b style="color:var(--ink-2)">Edge / Chrome 扩展商店</b>搜索安装 <b style="color:var(--ink-2)">Proxy SwitchyOmega</b>（图标是一个圆环，装机量最大的代理扩展）。</div>
+          <div style="font-size:12px;color:var(--ink-3);line-height:1.7;margin-top:6px">装完进入扩展设置 → 导入/导出 → 从剪贴板导入，粘贴下载的配置文件内容。</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <a class="btn" href="/download/switchy-profile.json" style="text-decoration:none"><svg class="ic"><use href="#i-download"/></svg> 下载代理配置</a>
+            <a class="btn gray" href="/download/proxy-open.bat" style="text-decoration:none"><svg class="ic"><use href="#i-download"/></svg> 代理启动器(可选)</a>
           </div>
         </div>
-        <div class="msg" id="bwLiveMsg"></div>
-        <div style="color:var(--muted);font-size:12px;margin-top:6px">和真实浏览器一样：鼠标悬停/点击/拖拽/右键/滚轮全部实时作用于真实 Chromium（代理出口生效、Cookie 保持）。「输入」模式下填好文字再点页面输入框即可键入；页面变化约 1 秒内自动刷新。</div>
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+          <div style="font-weight:600;font-size:13.5px;margin-bottom:8px">第 2 步 · 用代理打开网址</div>
+          <div style="font-size:12px;color:var(--ink-3);line-height:1.7">输入网址后点「用代理打开」→ 浏览器打开该网址；点击浏览器右上角 <b style="color:var(--ink-2)">SwitchyOmega 圆环图标 → 切换到「Scrapling 代理池」</b>，页面刷新后即走代理池出口 IP。</div>
+          <div style="font-size:12px;color:var(--ink-3);line-height:1.7;margin-top:6px">不填网址直接点按钮可打开 <b style="color:var(--ink-2)">httpbin.org/ip</b> 验证当前出口 IP。代理情景开启后，该浏览器所有网址都走代理池，<b style="color:var(--ink-2)">不碰系统代理、不影响其他程序</b>。</div>
+        </div>
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+          <div style="font-weight:600;font-size:13.5px;margin-bottom:8px">第 3 步 · 用完关闭</div>
+          <div style="font-size:12px;color:var(--ink-3);line-height:1.7">点 SwitchyOmega 图标切回 <b style="color:var(--ink-2)">「直接连接」</b>即恢复直连。速度取决于代理池质量；注册类操作建议配合「目标站代理体检」筛出的可用代理。</div>
+        </div>
       </div>
-      <div class="msg" id="bwMsg"></div>
-      <div id="bwResult" class="hidden" style="margin-top:10px">
-        <div class="status-row" id="bwMeta"></div>
-        <div id="bwBody" style="margin-top:8px"></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:10px">提示：代理出口与代理池实时联动（失败自动换代理）。「用代理打开」+ SwitchyOmega 情景切换即可走代理池，全程不动系统代理。若页面打不开，先开 httpbin.org/ip 看出口 IP 是否为代理；若不是，确认 SwitchyOmega 已切到「Scrapling 代理池」且 8081 端口已开放。</div>
+    </div>
+
+    <!-- 存活代理池（已迁移至此） -->
+    <div class="card">
+      <h2><span class="dot g"></span> 存活代理池<small>存活检测通过的代理自动入库；浏览器代理网关出口按延迟升序自动轮换，失败自动剔除</small>
+        <button class="btn gray" style="float:right" onclick="clearAlive()" id="aliveClearBtn">清空存活池</button>
+        <button class="btn gray" style="float:right;margin-right:8px" onclick="downloadAlive('json')"><svg class="ic"><use href="#i-download"/></svg> 下载 JSON</button>
+        <button class="btn gray" style="float:right;margin-right:8px" onclick="downloadAlive('csv')"><svg class="ic"><use href="#i-download"/></svg> 下载 CSV</button>
+        <button class="btn green" style="float:right;margin-right:8px" onclick="checkAlive()" id="aliveCheckBtn"><svg class="ic"><use href="#i-refresh"/></svg> 重新检测</button>
+      </h2>
+      <div class="msg" id="aliveMsg"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+        <input type="text" id="aliveAdd" placeholder="手动添加一条，如 1.2.3.4:8080" style="max-width:220px">
+        <button class="btn" onclick="addAlive()"><svg class="ic"><use href="#i-plus"/></svg> 添加</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+        <textarea id="aliveImport" placeholder="批量导入，每行一个 ip:port（支持 # 注释行）&#10;1.1.1.1:8080&#10;2.2.2.2:3128" style="flex:1;min-width:260px;max-width:460px;min-height:56px"></textarea>
+        <button class="btn green" onclick="importAlive(true)"><svg class="ic"><use href="#i-upload"/></svg> 导入并验证</button>
+        <button class="btn gray" onclick="importAlive(false)">仅入库不验证</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>代理 IP</th><th>端口</th><th>协议</th><th>延迟</th><th>出口 IP</th><th>检测时间</th><th>操作</th></tr></thead>
+          <tbody id="aliveBody"></tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -1039,32 +1036,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
             <tbody id="ctBody"></tbody>
           </table>
         </div>
-      </div>
-    </div>
-
-    <!-- 存活代理池 -->
-    <div class="card">
-      <h2><span class="dot g"></span> 存活代理池<small>存活检测通过的代理自动入库；不填指定代理访问时，优先用：该站可用池 → 存活池 → 全池</small>
-        <button class="btn gray" style="float:right" onclick="clearAlive()" id="aliveClearBtn">清空存活池</button>
-        <button class="btn gray" style="float:right;margin-right:8px" onclick="downloadAlive('json')"><svg class="ic"><use href="#i-download"/></svg> 下载 JSON</button>
-        <button class="btn gray" style="float:right;margin-right:8px" onclick="downloadAlive('csv')"><svg class="ic"><use href="#i-download"/></svg> 下载 CSV</button>
-        <button class="btn green" style="float:right;margin-right:8px" onclick="checkAlive()" id="aliveCheckBtn"><svg class="ic"><use href="#i-refresh"/></svg> 重新检测</button>
-      </h2>
-      <div class="msg" id="aliveMsg"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
-        <input type="text" id="aliveAdd" placeholder="手动添加一条，如 1.2.3.4:8080" style="max-width:220px">
-        <button class="btn" onclick="addAlive()"><svg class="ic"><use href="#i-plus"/></svg> 添加</button>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
-        <textarea id="aliveImport" placeholder="批量导入，每行一个 ip:port（支持 # 注释行）&#10;1.1.1.1:8080&#10;2.2.2.2:3128" style="flex:1;min-width:260px;max-width:460px;min-height:56px"></textarea>
-        <button class="btn green" onclick="importAlive(true)"><svg class="ic"><use href="#i-upload"/></svg> 导入并验证</button>
-        <button class="btn gray" onclick="importAlive(false)">仅入库不验证</button>
-      </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr><th>代理 IP</th><th>端口</th><th>协议</th><th>延迟</th><th>出口 IP</th><th>检测时间</th><th>操作</th></tr></thead>
-          <tbody id="aliveBody"></tbody>
-        </table>
       </div>
     </div>
 
@@ -2735,7 +2706,18 @@ function bwSetView(v) {
   if (_bwData && v !== "live") bwRender(_bwData);
 }
 function escapeAttr(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-async function browserOpen(changeIp) {
+async function proxyBrowserOpen() {
+  const url = document.getElementById("pbUrl").value.trim();
+  const msg = document.getElementById("pbMsg");
+  msg.innerHTML = "";
+  try {
+    location.href = "scrapling://open?url=" + encodeURIComponent(url || "https://httpbin.org/ip");
+    msg.innerHTML = '<span class="dot g"></span> 已用默认浏览器打开（含无网址时的出口验证页）。请点浏览器右上角 SwitchyOmega 圆环图标，切换到「Scrapling 代理池」情景后刷新页面，即走代理池出口。';
+  } catch (e) {
+    msg.innerHTML = "调起失败：" + e.message + "，请先下载 proxy-on.bat 开启代理。";
+  }
+}
+function browserOpen(changeIp) {
   const url = document.getElementById("bwUrl").value.trim();
   const msg = document.getElementById("bwMsg");
   const btn = document.getElementById("bwBtn");

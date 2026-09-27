@@ -2719,6 +2719,34 @@ def download_json():
         return FileResponse(PROXY_JSON, filename="proxies.json", media_type="application/json")
     raise HTTPException(status_code=404, detail="JSON 不存在")
 
+@app.get("/download/proxy-on.bat")
+def download_proxy_on():
+    path = "/opt/scrapling-web/proxy-on.bat"
+    if os.path.exists(path):
+        return FileResponse(path, filename="proxy-on.bat", media_type="application/octet-stream")
+    raise HTTPException(status_code=404, detail="脚本不存在")
+
+@app.get("/download/proxy-off.bat")
+def download_proxy_off():
+    path = "/opt/scrapling-web/proxy-off.bat"
+    if os.path.exists(path):
+        return FileResponse(path, filename="proxy-off.bat", media_type="application/octet-stream")
+    raise HTTPException(status_code=404, detail="脚本不存在")
+
+@app.get("/download/switchy-profile.json")
+def download_switchy_profile():
+    path = "/opt/scrapling-web/switchy-profile.json"
+    if os.path.exists(path):
+        return FileResponse(path, filename="switchy-profile.json", media_type="application/json")
+    raise HTTPException(status_code=404, detail="配置不存在")
+
+@app.get("/download/proxy-open.bat")
+def download_proxy_open():
+    path = "/opt/scrapling-web/proxy-open.bat"
+    if os.path.exists(path):
+        return FileResponse(path, filename="proxy-open.bat", media_type="application/octet-stream")
+    raise HTTPException(status_code=404, detail="脚本不存在")
+
 @app.get("/download/residential-client.py")
 def download_residential_client():
     """住宅代理客户端脚本下载（设备上运行，上报住宅节点）"""
