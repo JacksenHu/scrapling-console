@@ -1733,6 +1733,21 @@ def pick_proxy_candidates(url, n=5):
         add(p)
     return out
 
+def absolutize_html(html, base_url):
+    """把 HTML 中相对资源地址补全为绝对 URL（供前端 srcdoc 渲染页面）"""
+    try:
+        from urllib.parse import urljoin
+        import re as _re
+        def _fix(m):
+            attr, val = m.group(1), m.group(2).strip(chr(34) + chr(39))
+            if val and not val.startswith(("javascript:", "#", "data:", "http://", "https://", "//", "mailto:", "tel:")):
+                return f'{attr}="{urljoin(base_url, val)}"'
+            return m.group(0)
+        q = chr(34) + chr(39)
+        return _re.sub(r"(src|href|action|data-src|poster)=" + q + r"([^" + q + r"]*)" + q, _fix, html, flags=_re.I)
+    except Exception:
+        return html
+
 def pick_random_proxy():
     """从代理池随机挑一个可用代理，返回 'protocol://ip:port'"""
     pool = load_proxies()
@@ -1929,7 +1944,8 @@ async def api_proxy_visit(request: Request):
                                  allow_redirects=True)
                 text = r.text[:60000]
                 result = {"type": "text",
-                          "text": f"[HTTP {r.status_code}] 页面大小 {len(r.content)} 字节\n\n{text}"}
+                          "text": f"[HTTP {r.status_code}] 页面大小 {len(r.content)} 字节\n\n{text}",
+                          "page_html": absolutize_html(text, url)}
             else:
                 sess = call_tool("open_session", {
                     "session_type": "dynamic", "headless": True, "proxy": proxy_url})
@@ -1951,7 +1967,7 @@ async def api_proxy_visit(request: Request):
                     else:
                         result = parse_result_content(call_tool("screenshot", {
                             "url": url, "session_id": session_id, "image_type": "png",
-                            "full_page": False, "network_idle": True, "timeout": 25000}))
+                            "full_page": bool(body.get("full_page", False)), "network_idle": True, "timeout": 25000}))
                 finally:
                     try:
                         call_tool("close_session", {"session_id": session_id})
@@ -1994,7 +2010,8 @@ async def api_proxy_visit(request: Request):
                              "proxy": proxy_url, "exit_ip": exit_ip, "ms": ms, "ok": True})
             return {"ok": True, "mode": "plain", "proxy": proxy_url, "exit_ip": exit_ip,
                     "ms": ms, "attempts": len(tried) + 1, "result": {"type": "text",
-                    "text": f"[HTTP {r.status_code}] 浏览器渲染失败已自动降级为普通请求，页面大小 {len(r.content)} 字节\n\n{r.text[:60000]}"}}
+                    "text": f"[HTTP {r.status_code}] 浏览器渲染失败已自动降级为普通请求，页面大小 {len(r.content)} 字节\n\n{r.text[:60000]}",
+                    "page_html": absolutize_html(r.text[:60000], url)}}
         except Exception as e:
             last_err = _classify(e)
 

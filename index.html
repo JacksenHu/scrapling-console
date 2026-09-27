@@ -97,6 +97,10 @@ button .ic,a .ic{pointer-events:none}
 .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink-2)}
 .btn.ghost:hover{color:var(--ink-1);border-color:rgba(255,255,255,.18)}
 .btn.gray .ic,.btn.ghost .ic{color:var(--ink-1)}
+.seg{display:inline-flex;gap:4px;background:var(--panel-2);padding:3px;border-radius:10px;border:1px solid var(--border);margin-top:10px}
+.seg-item{border:0;background:transparent;color:var(--ink-3);font-family:var(--font-ui);font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:8px;cursor:pointer;transition:color .12s}
+.seg-item:hover{color:var(--ink-1)}
+.seg-item.active{background:var(--accent);color:var(--on-accent)}
 .btn.gray:hover .ic,.btn.ghost:hover .ic{color:var(--accent)}
 
 /* ---------- 输入 ---------- */
@@ -832,7 +836,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       <button class="nav-item active" id="navOverview" onclick="switchTab('overview')"><span><svg class="ic"><use href="#i-home"/></svg></span> 概览</button>
       <button class="nav-item" id="navTools" onclick="switchTab('tools')"><span><svg class="ic"><use href="#i-tools"/></svg></span> 抓取工具</button>
       <button class="nav-item" id="navAdvanced" onclick="switchTab('advanced')"><span><svg class="ic"><use href="#i-bolt"/></svg></span> 高级工具</button>
-      <button class="nav-item" id="navProxy" onclick="switchTab('proxy')"><span><svg class="ic"><use href="#i-globe"/></svg></span> 代理池 / 访问</button>
+      <button class="nav-item" id="navBrowser" onclick="switchTab('browser')"><span><svg class="ic"><use href="#i-eye"/></svg></span> 内置浏览器</button>
+      <button class="nav-item" id="navProxy" onclick="switchTab('proxy')"><span><svg class="ic"><use href="#i-globe"/></svg></span> 代理池</button>
       <button class="nav-item" id="navTasks" onclick="switchTab('tasks')"><span><svg class="ic"><use href="#i-spider"/></svg></span> 爬虫任务</button>
       <button class="nav-item" id="navGuide" onclick="switchTab('guide')"><span><svg class="ic"><use href="#i-book"/></svg></span> 教程</button>
       <button class="nav-item" id="navApi" onclick="switchTab('api')"><span><svg class="ic"><use href="#i-plug"/></svg></span> API 接入</button>
@@ -935,6 +940,37 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
   </section>
 
   <!-- 代理池 -->
+  <section id="sec-browser" class="hidden">
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-eye"/></svg> 内置浏览器<small>用代理池 IP 真实打开网页：页面渲染 / 网页截图 / 源码三视图，注册防关联；不填代理自动智能选池</small></h2>
+      <div class="toolbar" style="flex-wrap:wrap">
+        <input type="text" id="bwUrl" placeholder="输入网址，如 https://example.com/register" style="min-width:320px" onkeydown="if(event.key==='Enter')browserOpen(false)">
+        <select id="bwMode">
+          <option value="auto" selected>代理自动（智能选池）</option>
+          <option value="direct">直连本机（不用代理）</option>
+        </select>
+        <input type="text" id="bwProxy" placeholder="指定代理(可选) 如 1.2.3.4:8080" style="min-width:200px">
+        <select id="bwRetries">
+          <option value="2" selected>失败换 2 个 IP</option>
+          <option value="3">失败换 3 个 IP</option>
+          <option value="5">失败换 5 个 IP</option>
+        </select>
+        <button class="btn" onclick="browserOpen(false)" id="bwBtn"><svg class="ic"><use href="#i-eye"/></svg> 打开页面</button>
+        <button class="btn gray" onclick="browserOpen(true)" title="换一个新的代理 IP 重新打开"><svg class="ic"><use href="#i-refresh"/></svg> 换 IP 重开</button>
+      </div>
+      <div class="seg">
+        <button class="seg-item active" id="bwViewPage" onclick="bwSetView('page')">页面渲染</button>
+        <button class="seg-item" id="bwViewShot" onclick="bwSetView('shot')">网页截图</button>
+        <button class="seg-item" id="bwViewSrc" onclick="bwSetView('src')">HTML 源码</button>
+      </div>
+      <div class="msg" id="bwMsg"></div>
+      <div id="bwResult" class="hidden" style="margin-top:10px">
+        <div class="status-row" id="bwMeta"></div>
+        <div id="bwBody" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+
   <section id="sec-proxy" class="hidden">
 
       <div class="card">
@@ -950,31 +986,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
           </table>
         </div>
       </div>
-<div class="card">
-      <h2><svg class="ic"><use href="#i-globe"/></svg> 用代理打开网址<small>用代理池的 IP 访问目标网站（如注册页），换出口 IP 不怕风控；不填指定代理时自动优先用「该站可用池」</small></h2>
-      <div class="toolbar" style="flex-wrap:wrap">
-        <input type="text" id="pvUrl" placeholder="输入目标网址，如 https://example.com/register" style="min-width:320px" onkeydown="if(event.key==='Enter')proxyVisit()">
-        <select id="pvMode">
-          <option value="browser">浏览器渲染（隐身，推荐注册页）</option>
-          <option value="screenshot">网页截图（看代理打开后的样子）</option>
-          <option value="plain">普通请求（最快）</option>
-        </select>
-        <input type="text" id="pvProxy" placeholder="指定代理(可选) 如 1.2.3.4:8080" style="min-width:200px">
-        <select id="pvRetries" title="失败自动换代理重试次数">
-          <option value="1">失败换 1 个 IP 重试</option>
-          <option value="2" selected>失败换 2 个 IP 重试</option>
-          <option value="3">失败换 3 个 IP 重试</option>
-        </select>
-        <button class="btn" onclick="proxyVisit()" id="pvBtn"><svg class="ic"><use href="#i-rocket"/></svg> 用代理访问</button>
-        <button class="btn gray" onclick="proxyVisit(true)" id="pvRetryBtn" title="换一个新的代理 IP 重新访问"><svg class="ic"><use href="#i-refresh"/></svg> 换 IP 重试</button>
-      </div>
-      <div class="msg" id="pvMsg"></div>
-      <div id="pvResult" class="hidden" style="margin-top:10px">
-        <div class="status-row" id="pvMeta"></div>
-        <div id="pvBody" style="margin-top:8px"></div>
-      </div>
-    </div>
-
     <!-- 目标站代理体检 -->
     <div class="card">
       <h2><svg class="ic"><use href="#i-target"/></svg> 目标站代理体检<small>让代理池挨个访问你的目标网址，筛出"能打开这个站"的代理（注册专用池）</small></h2>
@@ -2252,10 +2263,10 @@ function switchTab(t) {
   document.querySelectorAll(".side .nav-item").forEach(b => b.classList.remove("active"));
   const navEl = document.getElementById("nav" + (t[0].toUpperCase() + t.slice(1)));
   if (navEl) navEl.classList.add("active");
-  const secs = ["overview", "tools", "advanced", "proxy", "tasks", "guide", "api", "quota", "status", "admin"];
+  const secs = ["overview", "tools", "advanced", "browser", "proxy", "tasks", "guide", "api", "quota", "status", "admin"];
   secs.forEach(s => document.getElementById("sec-" + s).classList.add("hidden"));
   document.getElementById("sec-" + t).classList.remove("hidden");
-  const titles = { overview: "概览", tools: "抓取工具", advanced: "高级工具", proxy: "代理池 / 访问", tasks: "爬虫任务", guide: "教程", api: "API 接入", quota: "额度与购买", status: "服务状态", admin: "管理后台" };
+  const titles = { overview: "概览", tools: "抓取工具", advanced: "高级工具", browser: "内置浏览器", proxy: "代理池", tasks: "爬虫任务", guide: "教程", api: "API 接入", quota: "额度与购买", status: "服务状态", admin: "管理后台" };
   document.getElementById("pageTitle").textContent = titles[t] || "控制台";
   if (t === "overview") loadOverview();
   if (t === "tools") { loadTools(); loadSessions(); }
@@ -2676,6 +2687,78 @@ async function loadSources() {
     const sel = document.getElementById("proxySource");
     sel.innerHTML = '<option value="">全部来源</option>' + data.sources.map(s => `<option value="${s}">${s}</option>`).join("");
   } catch (e) {}
+}
+
+/* ---------- 内置浏览器 ---------- */
+let _bwData = null;
+let _bwView = "page";
+function bwSetView(v) {
+  _bwView = v;
+  document.getElementById("bwViewPage").classList.toggle("active", v === "page");
+  document.getElementById("bwViewShot").classList.toggle("active", v === "shot");
+  document.getElementById("bwViewSrc").classList.toggle("active", v === "src");
+  if (_bwData) bwRender(_bwData);
+}
+function escapeAttr(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+async function browserOpen(changeIp) {
+  const url = document.getElementById("bwUrl").value.trim();
+  const msg = document.getElementById("bwMsg");
+  const btn = document.getElementById("bwBtn");
+  if (!url) { msg.textContent = "请先输入网址"; return; }
+  const direct = document.getElementById("bwMode").value === "direct";
+  if (direct) {
+    _bwData = { direct: true, url };
+    document.getElementById("bwResult").classList.remove("hidden");
+    document.getElementById("bwMeta").innerHTML = "<span>直连模式（用本机网络，未换出口 IP）</span>";
+    msg.innerHTML = "";
+    bwSetView("page");
+    return;
+  }
+  btn.disabled = true; btn.textContent = "打开中…（换出口需几秒到几十秒）";
+  msg.innerHTML = '<span class="spin"></span> 正在用代理打开页面…';
+  document.getElementById("bwResult").classList.add("hidden");
+  const view = _bwView;
+  const body = {
+    url,
+    mode: view === "shot" ? "screenshot" : "plain",
+    proxy: document.getElementById("bwProxy").value.trim() || undefined,
+    retries: parseInt(document.getElementById("bwRetries").value || "2", 10),
+    full_page: view === "shot",
+  };
+  try {
+    const data = await req("/proxy/visit", { method: "POST", body: JSON.stringify(body) });
+    _bwData = data;
+    document.getElementById("bwResult").classList.remove("hidden");
+    document.getElementById("bwMeta").innerHTML =
+      `<span>${IC('check')} 打开成功</span><span>代理: <b style="color:var(--accent)">${data.proxy}</b></span>` +
+      `<span>出口 IP: <b style="color:var(--accent2)">${data.exit_ip || "?"}</b></span>` +
+      `<span>耗时: ${data.ms}ms</span><span>尝试: ${data.attempts} 次</span>`;
+    msg.innerHTML = "";
+    bwRender(data);
+  } catch (e) {
+    msg.innerHTML = IC('x') + " " + escapeHtml(e.message);
+  }
+  btn.disabled = false; btn.innerHTML = IC('eye') + " 打开页面";
+}
+function bwRender(data) {
+  const el = document.getElementById("bwBody");
+  if (data.direct) {
+    el.innerHTML = `<iframe src="${escapeAttr(data.url)}" style="width:100%;height:66vh;background:#fff;border-radius:12px;border:1px solid var(--border)"></iframe>
+<div style="color:var(--muted);font-size:12px;margin-top:6px">直连模式：用你自己的网络直接打开，不换出口 IP。部分网站禁止嵌入（X-Frame-Options）会显示空白，请改用代理模式。</div>`;
+    return;
+  }
+  const r = data.result || {};
+  if (_bwView === "page") {
+    const html = r.page_html || r.text || "";
+    el.innerHTML = `<iframe sandbox="allow-scripts allow-forms allow-popups" srcdoc="${escapeAttr(html)}" style="width:100%;height:66vh;background:#fff;border-radius:12px;border:1px solid var(--border)"></iframe>
+<div style="color:var(--muted);font-size:12px;margin-top:6px">页面渲染：代理抓回的 HTML 在你浏览器内渲染（绕过禁止嵌入限制）；图片/样式/脚本为直连加载。想看含 JS 动态内容的真实网页请切「网页截图」视图。</div>`;
+  } else if (_bwView === "shot") {
+    let imgs = "";
+    (r.images || []).forEach(s => { imgs += `<img src="${s}" style="max-width:100%;border-radius:12px;margin:8px 0;box-shadow:var(--shadow-lg)">`; });
+    el.innerHTML = imgs || `<div style="color:var(--muted)">(截图为空)</div>`;
+  } else {
+    el.innerHTML = `<pre style="background:var(--bg2);padding:14px;border-radius:12px;max-height:56vh;overflow:auto;font-size:12px;white-space:pre-wrap">${escapeHtml(r.text || "(无源码)")}</pre>`;
+  }
 }
 
 /* ---------- 用代理打开网址 ---------- */
