@@ -966,24 +966,32 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       </div>
       <div id="bwLive" style="display:none;margin-top:12px">
         <div class="status-row" id="bwLiveMeta"></div>
-        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn gray" onclick="bwLiveAct('back')">后退</button>
-          <button class="btn gray" onclick="bwLiveAct('forward')">前进</button>
-          <button class="btn gray" onclick="bwLiveAct('reload')">刷新</button>
-          <button class="btn gray" onclick="bwLiveAct('scroll',{dy:-400})">↑ 滚动</button>
-          <button class="btn gray" onclick="bwLiveAct('scroll',{dy:400})">↓ 滚动</button>
-          <button class="btn red" onclick="bwLiveClose()">关闭会话</button>
-        </div>
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input type="text" id="bwLiveText" placeholder="要输入的文字（先点下面的截图里输入框位置）" style="min-width:280px">
-          <button class="btn gray" onclick="bwLiveMode('input')">输入文字</button>
-          <button class="btn gray" onclick="bwLiveMode('click')">仅点击</button>
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:8px">
+          <div style="display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <button class="btn gray" title="后退" onclick="bwLiveAct('back')"><svg class="ic" style="width:15px;height:15px;transform:rotate(180deg)"><use href="#i-arrow"/></svg></button>
+            <button class="btn gray" title="前进" onclick="bwLiveAct('forward')"><svg class="ic" style="width:15px;height:15px"><use href="#i-arrow"/></svg></button>
+            <button class="btn gray" title="刷新" onclick="bwLiveAct('reload')"><svg class="ic" style="width:15px;height:15px"><use href="#i-refresh"/></svg></button>
+            <input id="bwLiveAddr" placeholder="输入网址后按回车跳转（走代理）" spellcheck="false" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--ink-1);font-size:13px;font-family:var(--font-mono)" onkeydown="if(event.key==='Enter'){const u=this.value.trim(); if(u) bwLiveAct('goto',{url:u})}">
+            <button class="btn red" onclick="bwLiveClose()">关闭会话</button>
+          </div>
+          <div style="position:relative;background:repeating-conic-gradient(#1b1d19 0% 25%, #141612 0% 50%) 50%/26px 26px;height:66vh;min-height:420px;overflow:hidden" id="bwLiveStage">
+            <img id="bwLiveShot" style="width:100%;height:100%;object-fit:contain;cursor:crosshair;display:block;user-select:none" alt="真实浏览器实时画面" draggable="false"
+                 onmousemove="bwLiveMove(event)" onmousedown="bwLiveDown(event)" onmouseup="bwLiveUp(event)" oncontextmenu="bwLiveCtx(event);return false" onwheel="bwLiveWheel(event)">
+            <div id="bwLiveLoading" class="hidden" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.72);padding:6px 16px;border-radius:8px;font-size:12px;color:var(--ink-1)"><span class="spin"></span> 操作中…</div>
+          </div>
+          <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <span id="bwLiveTitle" style="font-size:12px;color:var(--ink-2);font-weight:600"></span>
+            <span id="bwLiveAddr2" style="font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;max-width:300px;white-space:nowrap;font-family:var(--font-mono)"></span>
+            <span style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <button class="btn gray" id="bwModeClick" onclick="bwLiveMode('click')">点击</button>
+              <button class="btn gray" id="bwModeInput" onclick="bwLiveMode('input')">输入</button>
+              <button class="btn gray" id="bwModeDrag" onclick="bwLiveMode('drag')">拖拽</button>
+              <input type="text" id="bwLiveText" placeholder="输入文字内容" style="width:170px">
+            </span>
+          </div>
         </div>
         <div class="msg" id="bwLiveMsg"></div>
-        <div style="margin-top:8px">
-          <img id="bwLiveShot" onclick="bwLiveClick(event)" style="max-width:100%;border-radius:12px;border:1px solid var(--border);cursor:crosshair" alt="浏览器实时截图">
-        </div>
-        <div style="color:var(--muted);font-size:12px;margin-top:6px">操作说明：这是真实 Chromium 浏览器，和真实浏览器一样可点击、输入、滚动、跳转（代理出口生效、Cookie/登录态保持）。点截图 = 鼠标点击；切「输入文字」后填内容再点截图里的输入框 = 输入文字。</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:6px">和真实浏览器一样：鼠标悬停/点击/拖拽/右键/滚轮全部实时作用于真实 Chromium（代理出口生效、Cookie 保持）。「输入」模式下填好文字再点页面输入框即可键入；页面变化约 1 秒内自动刷新。</div>
       </div>
       <div class="msg" id="bwMsg"></div>
       <div id="bwResult" class="hidden" style="margin-top:10px">
@@ -2770,6 +2778,30 @@ async function browserOpen(changeIp) {
 }
 let _bwId = null;
 let _bwLiveMode = "click";
+let _bwDown = { x: 0, y: 0, t: 0 };
+let _bwHoverT = 0;
+let _bwPoll = null;
+function _bwXY(e) {
+  const img = document.getElementById("bwLiveShot");
+  const nw = img.naturalWidth || 1280, nh = img.naturalHeight || 900;
+  const r = img.getBoundingClientRect();
+  const scale = Math.min(r.width / nw, r.height / nh);
+  const dw = nw * scale, dh = nh * scale;
+  const ox = (r.width - dw) / 2, oy = (r.height - dh) / 2;
+  const px = e.clientX - r.left - ox, py = e.clientY - r.top - oy;
+  return { x: Math.max(0, Math.min(1000, Math.round(px / dw * 1000))), y: Math.max(0, Math.min(1000, Math.round(py / dh * 1000))) };
+}
+function _bwSyncUI(d) {
+  if (!d) return;
+  const img = document.getElementById("bwLiveShot");
+  if (d.shot) img.src = d.shot;
+  if (d.title) document.getElementById("bwLiveTitle").textContent = d.title;
+  if (d.url) {
+    document.getElementById("bwLiveAddr2").textContent = d.url;
+    document.getElementById("bwLiveAddr").value = d.url;
+  }
+}
+async function _bwToken() { return localStorage.getItem("scrapling_session") || ""; }
 async function bwOpenLive() {
   const url = document.getElementById("bwUrl").value.trim();
   const msg = document.getElementById("bwLiveMsg");
@@ -2780,41 +2812,82 @@ async function bwOpenLive() {
   try {
     const d = await req("/browser/open", { method: "POST", body: JSON.stringify({ url, proxy }) });
     _bwId = d.browser_id;
-    document.getElementById("bwLiveMeta").innerHTML = `<span>会话: <b style="color:var(--accent)">${d.browser_id}</b></span><span>${escapeHtml(d.title || "")}</span><span style="overflow:hidden;text-overflow:ellipsis;max-width:340px;white-space:nowrap">${escapeHtml(d.url || "")}</span>`;
-    document.getElementById("bwLiveShot").src = d.shot;
+    document.getElementById("bwLiveMeta").innerHTML = `<span>会话: <b style="color:var(--accent)">${d.browser_id}</b></span>`;
+    _bwSyncUI({ shot: d.shot, title: d.title, url: d.url });
     msg.innerHTML = "";
+    _bwStartPoll();
   } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
 }
 async function bwLiveAct(op, extra) {
   if (!_bwId) { document.getElementById("bwLiveMsg").textContent = "请先点击「打开页面」启动会话"; return; }
   const msg = document.getElementById("bwLiveMsg");
-  msg.innerHTML = '<span class="spin"></span> 执行中…';
+  const ld = document.getElementById("bwLiveLoading");
+  ld.classList.remove("hidden");
   try {
     const d = await req("/browser/act", { method: "POST", body: JSON.stringify(Object.assign({ browser_id: _bwId, op }, extra || {})) });
-    document.getElementById("bwLiveMeta").innerHTML = `<span>会话: <b style="color:var(--accent)">${_bwId}</b></span><span>${escapeHtml(d.title || "")}</span><span style="overflow:hidden;text-overflow:ellipsis;max-width:340px;white-space:nowrap">${escapeHtml(d.url || "")}</span>`;
-    document.getElementById("bwLiveShot").src = d.shot;
+    _bwSyncUI(d);
     msg.innerHTML = "";
   } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+  ld.classList.add("hidden");
+}
+async function bwLiveActQuiet(op, extra) {
+  if (!_bwId) return;
+  try {
+    await fetch("/api/browser/act", { method: "POST", headers: { "Content-Type": "application/json", "X-Session-Token": await _bwToken() }, body: JSON.stringify(Object.assign({ browser_id: _bwId, op }, extra || {})) });
+  } catch (e) {}
+}
+function bwLiveMove(e) {
+  const now = Date.now();
+  if (now - _bwHoverT < 200) return;
+  _bwHoverT = now;
+  const p = _bwXY(e);
+  bwLiveActQuiet("hover", p);
+}
+function bwLiveDown(e) { _bwDown = { x: e.clientX, y: e.clientY, t: Date.now() }; }
+function bwLiveUp(e) {
+  const dx = e.clientX - _bwDown.x, dy = e.clientY - _bwDown.y;
+  const dist = Math.hypot(dx, dy);
+  const p = _bwXY(e);
+  if (_bwLiveMode === "drag" || dist > 12) {
+    const p1 = _bwXY({ clientX: _bwDown.x, clientY: _bwDown.y });
+    bwLiveAct("drag", { x1: p1.x, y1: p1.y, x2: p.x, y2: p.y });
+  } else if (_bwLiveMode === "input") {
+    const t = document.getElementById("bwLiveText").value;
+    if (!t) { document.getElementById("bwLiveMsg").textContent = "请先在右侧输入框填写要输入的文字"; return; }
+    bwLiveAct("type", { x: p.x, y: p.y, text: t });
+  } else {
+    bwLiveAct("click", { x: p.x, y: p.y });
+  }
+}
+function bwLiveCtx(e) { const p = _bwXY(e); bwLiveAct("rightclick", { x: p.x, y: p.y }); }
+function bwLiveWheel(e) {
+  e.preventDefault();
+  bwLiveAct("scroll", { dy: e.deltaY > 0 ? 400 : -400 });
 }
 function bwLiveMode(m) {
   _bwLiveMode = m;
-  document.getElementById("bwLiveMsg").textContent = m === "input" ? "输入模式：填好文字后，点击截图里的输入框位置" : "点击模式：点击截图任意位置 = 鼠标点击";
+  document.getElementById("bwModeClick").classList.toggle("active", m === "click");
+  document.getElementById("bwModeInput").classList.toggle("active", m === "input");
+  document.getElementById("bwModeDrag").classList.toggle("active", m === "drag");
+  document.getElementById("bwLiveMsg").textContent = m === "click" ? "点击模式：点页面任意位置 = 鼠标点击" : m === "input" ? "输入模式：填好文字后点页面输入框位置 = 键入" : "拖拽模式：按下拖动 = 拖拽元素";
 }
-function bwLiveClick(e) {
-  const img = document.getElementById("bwLiveShot");
-  const r = img.getBoundingClientRect();
-  const x = Math.round((e.clientX - r.left) / r.width * 1000);
-  const y = Math.round((e.clientY - r.top) / r.height * 1000);
-  if (_bwLiveMode === "input") {
-    const t = document.getElementById("bwLiveText").value;
-    if (!t) { document.getElementById("bwLiveMsg").textContent = "请先在上方输入框填写要输入的文字"; return; }
-    bwLiveAct("type", { x, y, text: t });
-  } else {
-    bwLiveAct("click", { x, y });
-  }
+function _bwStartPoll() {
+  _bwStopPoll();
+  _bwPoll = setInterval(async () => {
+    if (!_bwId) return;
+    try {
+      const tok = await _bwToken();
+      const r = await fetch("/api/browser/shot?browser_id=" + _bwId, { headers: { "X-Session-Token": tok } });
+      if (r.status === 404) { _bwStopPoll(); document.getElementById("bwLiveMsg").textContent = "会话已过期，请重新打开"; return; }
+      const d = await r.json();
+      _bwSyncUI(d);
+    } catch (e) {}
+  }, 1200);
 }
+function _bwStopPoll() { if (_bwPoll) { clearInterval(_bwPoll); _bwPoll = null; } }
 async function bwLiveClose() {
   if (_bwId) { try { await req("/browser/close", { method: "POST", body: JSON.stringify({ browser_id: _bwId }) }); } catch (e) {} _bwId = null; }
+  _bwStopPoll();
   document.getElementById("bwLive").style.display = "none";
 }
 

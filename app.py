@@ -332,6 +332,25 @@ async def api_browser_act(request: Request):
             await page.keyboard.type(text, delay=15)
         elif op == "scroll":
             await page.mouse.wheel(0, int(body.get("dy", 0)))
+        elif op == "hover":
+            x = int(float(body.get("x", 0)) / 1000 * 1280)
+            y = int(float(body.get("y", 0)) / 1000 * 900)
+            await page.mouse.move(x, y)
+        elif op == "drag":
+            x1 = int(float(body.get("x1", 0)) / 1000 * 1280)
+            y1 = int(float(body.get("y1", 0)) / 1000 * 900)
+            x2 = int(float(body.get("x2", 0)) / 1000 * 1280)
+            y2 = int(float(body.get("y2", 0)) / 1000 * 900)
+            await page.mouse.move(x1, y1)
+            await page.mouse.down()
+            await page.mouse.move(x2, y2, steps=8)
+            await page.mouse.up()
+        elif op == "rightclick":
+            x = int(float(body.get("x", 0)) / 1000 * 1280)
+            y = int(float(body.get("y", 0)) / 1000 * 900)
+            await page.mouse.click(x, y, button="right")
+        elif op == "key":
+            await page.keyboard.press(body.get("key", "Enter"))
         elif op == "back":
             await page.go_back()
         elif op == "forward":
@@ -351,6 +370,16 @@ async def api_browser_act(request: Request):
     except Exception as e:
         raise HTTPException(status_code=502, detail="操作失败: " + str(e)[:200])
     bws["ts"] = time.time()
+    shot = await _bw_shot(bid)
+    return {"shot": shot["shot"], "url": shot["url"], "title": shot["title"]}
+
+@app.get("/api/browser/shot")
+async def api_browser_shot(request: Request):
+    require_quota(request, cost=0)
+    bid = request.query_params.get("browser_id", "")
+    bws = _BWS.get(bid)
+    if not bws:
+        raise HTTPException(status_code=404, detail="会话不存在或已过期")
     shot = await _bw_shot(bid)
     return {"shot": shot["shot"], "url": shot["url"], "title": shot["title"]}
 
