@@ -242,6 +242,131 @@ def mcp_session_reset():
     _mcp_session_id["id"] = None
     return {"ok": True}
 
+# ---------------- 内置浏览器：真实交互会话（Playwright 驱动） ----------------
+_BWS = {}
+_BWS_TMP = "/tmp/scrapling-bw"
+_BW_MAX = 8
+_BW_TTL = 600
+os.makedirs(_BWS_TMP, exist_ok=True)
+
+async def _bw_shot(browser_id):
+    bws = _BWS.get(browser_id)
+    if not bws:
+        return None
+    page = bws["page"]
+    data = await page.screenshot(type="jpeg", quality=60)
+    import base64
+    return {"shot": "data:image/jpeg;base64," + base64.b64encode(data).decode(),
+            "url": page.url, "title": await page.title()}
+
+async def _bw_gc():
+    now = time.time()
+    for k in list(_BWS.keys()):
+        if now - _BWS[k]["ts"] > _BW_TTL:
+            try:
+                await _BWS[k]["browser"].close()
+            except Exception:
+                pass
+            _BWS.pop(k, None)
+
+@app.post("/api/browser/open")
+async def api_browser_open(request: Request):
+    require_quota(request)
+    body = await request.json()
+    url = (body.get("url") or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="请填写网址")
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    proxy = (body.get("proxy") or "").strip()
+    if proxy and not proxy.startswith(("http://", "https://", "socks5://")):
+        proxy = "http://" + proxy
+    await _bw_gc()
+    if len(_BWS) >= _BW_MAX:
+        old = min(_BWS.keys(), key=lambda k: _BWS[k]["ts"])
+        try:
+            await _BWS[old]["browser"].close()
+        except Exception:
+            pass
+        _BWS.pop(old, None)
+    from playwright.async_api import async_playwright
+    p = await async_playwright().start()
+    bid = "bw-" + uuid.uuid4().hex[:12]
+    launcher = {"headless": True,
+                "args": ["--disable-blink-features=AutomationControlled", "--no-sandbox"],
+                "viewport": {"width": 1280, "height": 900},
+                "user_data_dir": os.path.join(_BWS_TMP, bid),
+                "locale": "zh-CN"}
+    if proxy:
+        launcher["proxy"] = {"server": proxy}
+    ctx = await p.chromium.launch_persistent_context(**launcher)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    try:
+        await page.goto(url, timeout=45000, wait_until="domcontentloaded")
+    except Exception:
+        pass
+    _BWS[bid] = {"browser": p, "ctx": ctx, "page": page, "ts": time.time()}
+    shot = await _bw_shot(bid)
+    return {"browser_id": bid, "shot": shot["shot"], "url": page.url, "title": shot["title"]}
+
+@app.post("/api/browser/act")
+async def api_browser_act(request: Request):
+    require_quota(request, cost=0)
+    body = await request.json()
+    bid = (body.get("browser_id") or "").strip()
+    op = body.get("op", "")
+    bws = _BWS.get(bid)
+    if not bws:
+        raise HTTPException(status_code=404, detail="会话不存在或已过期，请重新「启动会话」")
+    page = bws["page"]
+    try:
+        if op == "click":
+            x = int(float(body.get("x", 0)) / 1000 * 1280)
+            y = int(float(body.get("y", 0)) / 1000 * 900)
+            await page.mouse.click(x, y)
+        elif op == "type":
+            x = int(float(body.get("x", 0)) / 1000 * 1280)
+            y = int(float(body.get("y", 0)) / 1000 * 900)
+            text = body.get("text", "")
+            await page.mouse.click(x, y)
+            await page.keyboard.type(text, delay=15)
+        elif op == "scroll":
+            await page.mouse.wheel(0, int(body.get("dy", 0)))
+        elif op == "back":
+            await page.go_back()
+        elif op == "forward":
+            await page.go_forward()
+        elif op == "reload":
+            await page.reload()
+        elif op == "goto":
+            u = (body.get("url") or "").strip()
+            if u:
+                if not u.startswith(("http://", "https://")):
+                    u = "https://" + u
+                await page.goto(u, timeout=45000, wait_until="domcontentloaded")
+        else:
+            raise HTTPException(status_code=400, detail="未知操作: " + op)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail="操作失败: " + str(e)[:200])
+    bws["ts"] = time.time()
+    shot = await _bw_shot(bid)
+    return {"shot": shot["shot"], "url": shot["url"], "title": shot["title"]}
+
+@app.post("/api/browser/close")
+async def api_browser_close(request: Request):
+    body = await request.json()
+    bid = (body.get("browser_id") or "").strip()
+    bws = _BWS.pop(bid, None)
+    if bws:
+        try:
+            await bws["browser"].close()
+        except Exception:
+            pass
+    return {"ok": True}
+
+
 # ---------------- 快捷任务编排 ----------------
 
 def call_tool(name: str, arguments: dict):

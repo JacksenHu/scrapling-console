@@ -961,7 +961,29 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
       <div class="seg">
         <button class="seg-item active" id="bwViewPage" onclick="bwSetView('page')">页面渲染</button>
         <button class="seg-item" id="bwViewShot" onclick="bwSetView('shot')">网页截图</button>
+        <button class="seg-item" id="bwViewLive" onclick="bwSetView('live')">实时操作</button>
         <button class="seg-item" id="bwViewSrc" onclick="bwSetView('src')">HTML 源码</button>
+      </div>
+      <div id="bwLive" style="display:none;margin-top:12px">
+        <div class="status-row" id="bwLiveMeta"></div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn gray" onclick="bwLiveAct('back')">后退</button>
+          <button class="btn gray" onclick="bwLiveAct('forward')">前进</button>
+          <button class="btn gray" onclick="bwLiveAct('reload')">刷新</button>
+          <button class="btn gray" onclick="bwLiveAct('scroll',{dy:-400})">↑ 滚动</button>
+          <button class="btn gray" onclick="bwLiveAct('scroll',{dy:400})">↓ 滚动</button>
+          <button class="btn red" onclick="bwLiveClose()">关闭会话</button>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="bwLiveText" placeholder="要输入的文字（先点下面的截图里输入框位置）" style="min-width:280px">
+          <button class="btn gray" onclick="bwLiveMode('input')">输入文字</button>
+          <button class="btn gray" onclick="bwLiveMode('click')">仅点击</button>
+        </div>
+        <div class="msg" id="bwLiveMsg"></div>
+        <div style="margin-top:8px">
+          <img id="bwLiveShot" onclick="bwLiveClick(event)" style="max-width:100%;border-radius:12px;border:1px solid var(--border);cursor:crosshair" alt="浏览器实时截图">
+        </div>
+        <div style="color:var(--muted);font-size:12px;margin-top:6px">操作说明：这是真实 Chromium 浏览器，和真实浏览器一样可点击、输入、滚动、跳转（代理出口生效、Cookie/登录态保持）。点截图 = 鼠标点击；切「输入文字」后填内容再点截图里的输入框 = 输入文字。</div>
       </div>
       <div class="msg" id="bwMsg"></div>
       <div id="bwResult" class="hidden" style="margin-top:10px">
@@ -2696,8 +2718,13 @@ function bwSetView(v) {
   _bwView = v;
   document.getElementById("bwViewPage").classList.toggle("active", v === "page");
   document.getElementById("bwViewShot").classList.toggle("active", v === "shot");
+  document.getElementById("bwViewLive").classList.toggle("active", v === "live");
   document.getElementById("bwViewSrc").classList.toggle("active", v === "src");
-  if (_bwData) bwRender(_bwData);
+  const liveEl = document.getElementById("bwLive");
+  const bodyEl = document.getElementById("bwBody");
+  if (liveEl) liveEl.style.display = v === "live" ? "" : "none";
+  if (bodyEl) bodyEl.style.display = v === "live" ? "none" : "";
+  if (_bwData && v !== "live") bwRender(_bwData);
 }
 function escapeAttr(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 async function browserOpen(changeIp) {
@@ -2718,6 +2745,7 @@ async function browserOpen(changeIp) {
   msg.innerHTML = '<span class="spin"></span> 正在用代理打开页面…';
   document.getElementById("bwResult").classList.add("hidden");
   const view = _bwView;
+  if (view === "live") { bwOpenLive(); return; }
   const body = {
     url,
     mode: view === "shot" ? "screenshot" : "plain",
@@ -2740,6 +2768,56 @@ async function browserOpen(changeIp) {
   }
   btn.disabled = false; btn.innerHTML = IC('eye') + " 打开页面";
 }
+let _bwId = null;
+let _bwLiveMode = "click";
+async function bwOpenLive() {
+  const url = document.getElementById("bwUrl").value.trim();
+  const msg = document.getElementById("bwLiveMsg");
+  if (!url) { document.getElementById("bwMsg").textContent = "请先输入网址"; return; }
+  document.getElementById("bwLive").style.display = "";
+  msg.innerHTML = '<span class="spin"></span> 正在启动真实浏览器会话…';
+  const proxy = document.getElementById("bwProxy").value.trim() || undefined;
+  try {
+    const d = await req("/browser/open", { method: "POST", body: JSON.stringify({ url, proxy }) });
+    _bwId = d.browser_id;
+    document.getElementById("bwLiveMeta").innerHTML = `<span>会话: <b style="color:var(--accent)">${d.browser_id}</b></span><span>${escapeHtml(d.title || "")}</span><span style="overflow:hidden;text-overflow:ellipsis;max-width:340px;white-space:nowrap">${escapeHtml(d.url || "")}</span>`;
+    document.getElementById("bwLiveShot").src = d.shot;
+    msg.innerHTML = "";
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+async function bwLiveAct(op, extra) {
+  if (!_bwId) { document.getElementById("bwLiveMsg").textContent = "请先点击「打开页面」启动会话"; return; }
+  const msg = document.getElementById("bwLiveMsg");
+  msg.innerHTML = '<span class="spin"></span> 执行中…';
+  try {
+    const d = await req("/browser/act", { method: "POST", body: JSON.stringify(Object.assign({ browser_id: _bwId, op }, extra || {})) });
+    document.getElementById("bwLiveMeta").innerHTML = `<span>会话: <b style="color:var(--accent)">${_bwId}</b></span><span>${escapeHtml(d.title || "")}</span><span style="overflow:hidden;text-overflow:ellipsis;max-width:340px;white-space:nowrap">${escapeHtml(d.url || "")}</span>`;
+    document.getElementById("bwLiveShot").src = d.shot;
+    msg.innerHTML = "";
+  } catch (e) { msg.innerHTML = IC('x') + " " + escapeHtml(e.message); }
+}
+function bwLiveMode(m) {
+  _bwLiveMode = m;
+  document.getElementById("bwLiveMsg").textContent = m === "input" ? "输入模式：填好文字后，点击截图里的输入框位置" : "点击模式：点击截图任意位置 = 鼠标点击";
+}
+function bwLiveClick(e) {
+  const img = document.getElementById("bwLiveShot");
+  const r = img.getBoundingClientRect();
+  const x = Math.round((e.clientX - r.left) / r.width * 1000);
+  const y = Math.round((e.clientY - r.top) / r.height * 1000);
+  if (_bwLiveMode === "input") {
+    const t = document.getElementById("bwLiveText").value;
+    if (!t) { document.getElementById("bwLiveMsg").textContent = "请先在上方输入框填写要输入的文字"; return; }
+    bwLiveAct("type", { x, y, text: t });
+  } else {
+    bwLiveAct("click", { x, y });
+  }
+}
+async function bwLiveClose() {
+  if (_bwId) { try { await req("/browser/close", { method: "POST", body: JSON.stringify({ browser_id: _bwId }) }); } catch (e) {} _bwId = null; }
+  document.getElementById("bwLive").style.display = "none";
+}
+
 function bwRender(data) {
   const el = document.getElementById("bwBody");
   if (data.direct) {
