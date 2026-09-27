@@ -2717,7 +2717,7 @@ async function proxyBrowserOpen() {
     msg.innerHTML = "调起失败：" + e.message + "，请先下载 proxy-on.bat 开启代理。";
   }
 }
-function browserOpen(changeIp) {
+async function browserOpen(changeIp) {
   const url = document.getElementById("bwUrl").value.trim();
   const msg = document.getElementById("bwMsg");
   const btn = document.getElementById("bwBtn");
